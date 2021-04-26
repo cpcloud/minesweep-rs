@@ -1,0 +1,16 @@
+[package]
+name = "sweep"
+version = "0.1.0"
+authors = ["Phillip Cloud"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1"
+ctrlc = { version = "3", features = ["termination"] }
+itertools = "0.10"
+rand = "0.8"
+structopt = "0.3"
+termion = "1"
+thiserror = "1"
+tui = "0.14"
+typed-builder = "0.9"
