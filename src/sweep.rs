@@ -2,14 +2,15 @@ use crate::error::Error;
 use itertools::Itertools;
 use std::collections::{HashMap, HashSet, VecDeque};
 
-type Coordinate = (u16, u16);
+pub(crate) type Coordinate = (u16, u16);
 
-struct Tile {
+#[derive(Debug, Clone)]
+pub(crate) struct Tile {
     adjacent_tiles: HashSet<Coordinate>,
-    mine: bool,
-    exposed: bool,
-    flagged: bool,
-    adjacent_mines: HashSet<Coordinate>,
+    pub(crate) mine: bool,
+    pub(crate) exposed: bool,
+    pub(crate) flagged: bool,
+    pub(crate) adjacent_mines: u8,
 }
 
 impl Tile {
@@ -19,16 +20,12 @@ impl Tile {
             mine,
             exposed: false,
             flagged: false,
-            adjacent_mines: HashSet::new(),
+            adjacent_mines: 0,
         }
     }
 
     pub(crate) fn correctly_flagged(&self) -> bool {
         self.flagged && self.mine
-    }
-
-    pub(crate) fn exposed(&self) -> bool {
-        !(self.mine || self.flagged)
     }
 }
 
@@ -43,7 +40,7 @@ impl Increment {
     fn offset(&self, value: u16) -> u16 {
         match *self {
             Self::One => value + 1,
-            Self::NegOne => value - 1,
+            Self::NegOne => value.saturating_sub(1),
             Self::Zero => value,
         }
     }
@@ -62,10 +59,9 @@ fn adjacent(
         .filter_map(|(x, y)| {
             let x_offset = x.offset(i);
             let y_offset = y.offset(j);
-            if x != Increment::Zero
-                || y != Increment::Zero
-                    && (0..nrows).contains(&x_offset)
-                    && (0..ncolumns).contains(&y_offset)
+            if (x != Increment::Zero || y != Increment::Zero)
+                && x_offset < nrows
+                && y_offset < ncolumns
             {
                 Some((x_offset, y_offset))
             } else {
@@ -76,9 +72,9 @@ fn adjacent(
 }
 
 pub(crate) struct Board {
-    nrows: u16,
-    ncolumns: u16,
     grid: HashMap<Coordinate, Tile>,
+    pub(crate) nrows: u16,
+    pub(crate) ncolumns: u16,
     nmines: u16,
     nflagged: u16,
 }
@@ -91,7 +87,7 @@ impl Board {
                 .into_iter()
                 .collect::<HashSet<_>>();
 
-        let grid = (0..nrows)
+        let mut grid = (0..nrows)
             .cartesian_product(0..ncolumns)
             .enumerate()
             .map(|(i, point)| {
@@ -101,6 +97,13 @@ impl Board {
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
+
+        let grid_clone = grid.clone();
+        for tile in grid.values_mut() {
+            for coord in tile.adjacent_tiles.iter() {
+                tile.adjacent_mines += u8::from(grid_clone[coord].mine);
+            }
+        }
 
         Ok(Self {
             nrows,
@@ -115,16 +118,12 @@ impl Board {
         self.nrows * self.ncolumns
     }
 
-    pub(crate) fn unexposed_tiles(&self) -> u16 {
-        self.ntiles() - self.nmines
+    fn total_exposed(&self) -> u16 {
+        self.grid.values().map(|tile| u16::from(tile.exposed)).sum()
     }
 
     pub(crate) fn available_flags(&self) -> u16 {
         self.nmines - self.nflagged
-    }
-
-    pub(crate) fn total_exposed(&self) -> u16 {
-        self.grid.values().map(|tile| u16::from(tile.exposed)).sum()
     }
 
     pub(crate) fn win(&self) -> bool {
@@ -138,41 +137,43 @@ impl Board {
         self.ntiles() == exposed_or_correctly_flagged
     }
 
-    pub(crate) fn expose(&mut self, i: u16, j: u16) -> Result<HashSet<Coordinate>, Error> {
+    pub(crate) fn expose(&mut self, i: u16, j: u16) -> Result<bool, Error> {
         if self.tile(i, j)?.mine {
-            self.grid
-                .get_mut(&(i, j))
-                .ok_or(Error::GetTile(i, j))?
-                .exposed = true;
-            return Ok([(i, j)].iter().copied().collect());
+            self.tile_mut(i, j)?.exposed = true;
+            return Ok(true);
         }
 
         let mut seen = HashSet::new();
         let mut coordinates = [(i, j)].iter().copied().collect::<VecDeque<_>>();
-        let mut exposed = HashSet::new();
 
         while let Some((x, y)) = coordinates.pop_front() {
             if seen.insert((x, y)) {
-                let tile = self.tile(x, y)?;
+                let tile = self.tile_mut(x, y)?;
 
-                if tile.exposed() {
-                    exposed.insert((x, y));
-                }
+                tile.exposed = !(tile.mine || tile.flagged);
 
-                if tile.adjacent_mines.is_empty() {
-                    coordinates.extend(tile.adjacent_tiles.iter());
+                if tile.adjacent_mines == 0 {
+                    coordinates.extend(tile.adjacent_tiles.clone());
                 }
             }
         }
 
-        Ok(exposed)
+        Ok(false)
     }
 
-    fn tile(&self, i: u16, j: u16) -> Result<&Tile, Error> {
+    pub(crate) fn expose_all(&mut self) -> Result<(), Error> {
+        #[allow(clippy::needless_collect)]
+        for (i, j) in self.grid.keys().copied().collect::<Vec<_>>().into_iter() {
+            self.expose(i, j)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn tile(&self, i: u16, j: u16) -> Result<&Tile, Error> {
         self.grid.get(&(i, j)).ok_or(Error::GetTile(i, j))
     }
 
-    fn tile_mut(&mut self, i: u16, j: u16) -> Result<&mut Tile, Error> {
+    pub(crate) fn tile_mut(&mut self, i: u16, j: u16) -> Result<&mut Tile, Error> {
         self.grid.get_mut(&(i, j)).ok_or(Error::GetTile(i, j))
     }
 
@@ -182,15 +183,11 @@ impl Board {
         let flagged = !was_flagged;
         let nmines = self.nmines;
         if was_flagged {
-            if nflagged.checked_sub(1).is_some() {
-                self.tile_mut(i, j)?.flagged = flagged;
-                self.nflagged -= 1;
-            }
-        } else {
-            if nflagged + 1 <= nmines && !self.grid[&(i, j)].exposed() {
-                self.tile_mut(i, j)?.flagged = flagged;
-                self.nflagged += 1;
-            }
+            self.nflagged = self.nflagged.saturating_sub(1);
+            self.tile_mut(i, j)?.flagged = flagged;
+        } else if nflagged < nmines && !self.tile(i, j)?.exposed {
+            self.tile_mut(i, j)?.flagged = flagged;
+            self.nflagged += 1;
         }
         Ok(flagged)
     }

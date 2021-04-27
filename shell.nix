@@ -10,7 +10,5 @@ pkgs.mkShell {
     cargo-release
     cargo-udeps
     niv
-    openssl
-    pkg-config
   ];
 }

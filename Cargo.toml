@@ -6,7 +6,8 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1"
-ctrlc = { version = "3", features = ["termination"] }
+bitflags = "1"
+ctrlc = "3"
 itertools = "0.10"
 rand = "0.8"
 structopt = "0.3"
