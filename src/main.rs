@@ -22,6 +22,14 @@ struct Opt {
     /// The total number of mines in the grid.
     #[structopt(short, long, default_value = "10")]
     mines: u16,
+
+    /// The width of each cell.
+    #[structopt(short, long, default_value = "5")]
+    cell_width: u16,
+
+    /// The height of each cell.
+    #[structopt(short, long, default_value = "3")]
+    cell_height: u16,
 }
 
 fn main() -> Result<()> {
@@ -29,6 +37,8 @@ fn main() -> Result<()> {
         rows,
         columns,
         mines,
+        cell_width,
+        cell_height,
     } = Opt::from_args();
 
     if mines > rows * columns {
@@ -51,6 +61,8 @@ fn main() -> Result<()> {
         .rows(rows)
         .columns(columns)
         .mines(mines)
+        .cell_width(cell_width)
+        .cell_height(cell_height)
         .terminal(terminal)
         .build()
         .run()

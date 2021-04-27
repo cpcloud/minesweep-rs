@@ -28,6 +28,8 @@ where
     rows: u16,
     columns: u16,
     mines: u16,
+    cell_width: u16,
+    cell_height: u16,
     terminal: Terminal<TermionBackend<W>>,
 }
 
@@ -127,17 +129,19 @@ impl<W: Write> Ui<W> {
         })
         .map_err(Error::SetHandler)?;
 
-        let horizontal_length = 5;
-        let vertical_length = 3;
-        let padding = 1;
-        let grid_width = horizontal_length * columns + 2 * padding;
-        let grid_height = vertical_length * rows + 2 * padding;
+        let cell_width = self.cell_width;
+        let cell_height = self.cell_height;
 
-        let row_constraints = std::iter::repeat(Constraint::Length(vertical_length))
+        let padding = 1;
+
+        let grid_width = cell_width * columns + 2 * padding;
+        let grid_height = cell_height * rows + 2 * padding;
+
+        let row_constraints = std::iter::repeat(Constraint::Length(cell_height))
             .take(rows.into())
             .collect::<Vec<_>>();
 
-        let col_constraints = std::iter::repeat(Constraint::Length(horizontal_length))
+        let col_constraints = std::iter::repeat(Constraint::Length(cell_width))
             .take(columns.into())
             .collect::<Vec<_>>();
 
@@ -219,27 +223,41 @@ impl<W: Write> Ui<W> {
                             } else {
                                 " ".to_owned()
                             };
-
-                            let cell = Paragraph::new(format!(
+                            let single_row_text = format!(
                                 "{:^length$}",
                                 cell_text,
-                                length = usize::from(horizontal_length - 2)
-                            ))
-                            .block(block)
-                            .style(
-                                Style::default()
-                                    .fg(if app.active() == (r, c) || app.exposed(r, c).unwrap() {
-                                        Color::White
-                                    } else {
-                                        Color::Black
-                                    })
-                                    .bg(if app.active() == (r, c) || app.exposed(r, c).unwrap() {
-                                        Color::Black
-                                    } else {
-                                        Color::White
-                                    }),
-                            )
-                            .alignment(Alignment::Center);
+                                length = usize::from(cell_width - 2)
+                            );
+                            let pad_line = " ".repeat(usize::from(cell_width));
+                            let num_pad_lines = usize::from(cell_height - 3);
+                            let lines = std::iter::repeat(pad_line.clone())
+                                .take(num_pad_lines / 2)
+                                .chain(std::iter::once(single_row_text.clone()))
+                                .chain(std::iter::repeat(pad_line).take(num_pad_lines / 2))
+                                .collect::<Vec<_>>();
+
+                            let cell = Paragraph::new(lines.join("\n"))
+                                .block(block)
+                                .style(
+                                    Style::default()
+                                        .fg(
+                                            if app.active() == (r, c) || app.exposed(r, c).unwrap()
+                                            {
+                                                Color::White
+                                            } else {
+                                                Color::Black
+                                            },
+                                        )
+                                        .bg(
+                                            if app.active() == (r, c) || app.exposed(r, c).unwrap()
+                                            {
+                                                Color::Black
+                                            } else {
+                                                Color::White
+                                            },
+                                        ),
+                                )
+                                .alignment(Alignment::Left);
                             frame.render_widget(cell, col_chunk);
                         }
                     }
