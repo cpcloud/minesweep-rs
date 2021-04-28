@@ -98,6 +98,7 @@ impl Board {
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
 
+        // TODO: avoid this clone somehow
         let grid_clone = grid.clone();
         for tile in grid.values_mut() {
             for coord in tile.adjacent_tiles.iter() {

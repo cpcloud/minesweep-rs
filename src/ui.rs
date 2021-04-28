@@ -75,6 +75,30 @@ impl App {
         }
     }
 
+    fn home(&mut self) {
+        self.x_pos = 0;
+    }
+
+    fn end(&mut self) {
+        self.x_pos = self.board.ncolumns - 1;
+    }
+
+    fn page_left(&mut self) {
+        self.x_pos = self.x_pos.saturating_sub(self.board.ncolumns / 2);
+    }
+
+    fn page_right(&mut self) {
+        self.x_pos = (self.x_pos + self.board.ncolumns / 2).min(self.board.ncolumns - 1)
+    }
+
+    fn page_up(&mut self) {
+        self.y_pos = self.y_pos.saturating_sub(self.board.nrows / 2);
+    }
+
+    fn page_down(&mut self) {
+        self.y_pos = (self.y_pos + self.board.nrows / 2).min(self.board.nrows - 1)
+    }
+
     fn active(&self) -> (u16, u16) {
         (self.y_pos, self.x_pos)
     }
@@ -271,6 +295,12 @@ impl<W: Write> Ui<W> {
                     Key::Down | Key::Char('j') => app.down(),
                     Key::Left | Key::Char('h') => app.left(),
                     Key::Right | Key::Char('l') => app.right(),
+                    Key::Char('a') => app.page_left(),
+                    Key::Char('e') => app.page_right(),
+                    Key::Home | Key::Ctrl('a') => app.home(),
+                    Key::End | Key::Ctrl('e') => app.end(),
+                    Key::PageUp | Key::Ctrl('u') => app.page_up(),
+                    Key::PageDown | Key::Ctrl('d') => app.page_down(),
                     Key::Char('f') if !lost && !app.win() => app.flag()?,
                     Key::Char(' ')
                         if !lost && !app.win() && {
