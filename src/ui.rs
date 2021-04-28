@@ -175,40 +175,58 @@ impl<W: Write> Ui<W> {
         while running.load(Ordering::SeqCst) {
             self.terminal
                 .draw(|frame| {
-                    let block = Block::default()
-                        .borders(Borders::ALL)
-                        .title(format!("flags: {}", app.board.available_flags()))
-                        .border_type(BorderType::Rounded);
-
                     let terminal_rect = frame.size();
 
-                    let size = Rect::new(
-                        (terminal_rect.width / 2).saturating_sub(grid_width / 2),
-                        (terminal_rect.height / 2).saturating_sub(grid_height / 2),
+                    let outer_block = Block::default()
+                        .borders(Borders::ALL)
+                        .title("Minesweeper")
+                        .border_type(BorderType::Rounded);
+                    frame.render_widget(outer_block, terminal_rect);
+
+                    let outer_rects = Layout::default()
+                        .direction(Direction::Vertical)
+                        .margin(1)
+                        .constraints(vec![Constraint::Percentage(10), Constraint::Percentage(90)])
+                        .split(terminal_rect);
+
+                    let info_rect = outer_rects[0];
+                    let mines_rect = outer_rects[1];
+
+                    let info_block = Block::default()
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded);
+                    frame.render_widget(info_block, info_rect);
+
+                    let mines_block = Block::default()
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded);
+                    frame.render_widget(mines_block, mines_rect);
+
+                    let mines_block_size = Rect::new(
+                        (mines_rect.width / 2).saturating_sub(grid_width / 2),
+                        (mines_rect.y + (mines_rect.y + mines_rect.height) / 2) / 2,
                         grid_width,
                         grid_height,
                     );
 
-                    frame.render_widget(block, size);
-
-                    let row_chunks = Layout::default()
+                    let row_rects = Layout::default()
                         .direction(Direction::Vertical)
                         .vertical_margin(1)
                         .horizontal_margin(0)
                         .constraints(row_constraints.clone())
-                        .split(size);
+                        .split(mines_rect);
 
-                    for (r, row_chunk) in row_chunks.into_iter().enumerate() {
-                        let col_chunks = Layout::default()
+                    for (r, row_rect) in row_rects.into_iter().enumerate() {
+                        let col_rects = Layout::default()
                             .direction(Direction::Horizontal)
                             .vertical_margin(0)
                             .horizontal_margin(1)
                             .constraints(col_constraints.clone())
-                            .split(row_chunk);
+                            .split(row_rect);
 
                         let r = u16::try_from(r).unwrap();
 
-                        for (c, col_chunk) in col_chunks.into_iter().enumerate() {
+                        for (c, cell_rect) in col_rects.into_iter().enumerate() {
                             let c = u16::try_from(c).unwrap();
 
                             let is_cell_active = app.active() == (r, c);
@@ -282,7 +300,7 @@ impl<W: Write> Ui<W> {
                                         ),
                                 )
                                 .alignment(Alignment::Left);
-                            frame.render_widget(cell, col_chunk);
+                            frame.render_widget(cell, cell_rect);
                         }
                     }
                 })
