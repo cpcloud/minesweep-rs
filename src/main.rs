@@ -24,11 +24,11 @@ struct Opt {
     mines: u16,
 
     /// The width of each cell.
-    #[structopt(short, long, default_value = "5")]
+    #[structopt(short = "-w", long, default_value = "5")]
     cell_width: u16,
 
     /// The height of each cell.
-    #[structopt(short, long, default_value = "3")]
+    #[structopt(short = "-H", long, default_value = "3")]
     cell_height: u16,
 }
 
