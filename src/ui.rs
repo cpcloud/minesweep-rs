@@ -92,36 +92,40 @@ const BOMB: &str = "💣";
 const FLAG: &str = "⛳";
 
 struct App {
-    x_pos: u16,
-    y_pos: u16,
     board: Board,
+    active_column: u16,
+    active_row: u16,
 }
 
-struct Cell<'a> {
-    app: &'a App,
-    r: u16,
-    c: u16,
+struct Cell<'app> {
+    app: &'app App,
+    row: u16,
+    column: u16,
 }
 
-impl<'a> Cell<'a> {
-    fn new(app: &'a App, r: u16, c: u16) -> Self {
-        Self { app, r, c }
+impl<'app> Cell<'app> {
+    fn new(app: &'app App, r: u16, c: u16) -> Self {
+        Self {
+            app,
+            row: r,
+            column: c,
+        }
     }
 
     fn is_active(&self) -> bool {
-        self.app.active() == (self.r, self.c)
+        self.app.active() == (self.row, self.column)
     }
 
     fn is_exposed(&self) -> bool {
-        self.app.board.tile(self.r, self.c).unwrap().exposed
+        self.app.board.tile(self.row, self.column).unwrap().exposed
     }
 
     fn is_flagged(&self) -> bool {
-        self.app.board.tile(self.r, self.c).unwrap().flagged
+        self.app.board.tile(self.row, self.column).unwrap().flagged
     }
 
     fn is_mine(&self) -> bool {
-        self.app.board.tile(self.r, self.c).unwrap().mine
+        self.app.board.tile(self.row, self.column).unwrap().mine
     }
 
     fn block(&self, lost: bool) -> Block {
@@ -145,26 +149,51 @@ impl<'a> Cell<'a> {
             )
             .border_type(BorderType::Rounded)
     }
+
+    fn text_style(&self) -> Style {
+        Style::default()
+            .fg(if self.is_exposed() && self.is_mine() {
+                Color::LightYellow
+            } else if self.is_exposed() {
+                Color::White
+            } else {
+                Color::Black
+            })
+            .bg(if self.is_exposed() {
+                Color::Black
+            } else if self.is_active() {
+                Color::Cyan
+            } else {
+                Color::White
+            })
+    }
 }
 
-impl<'a> fmt::Display for Cell<'a> {
+impl fmt::Display for Cell<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let cell_text = if self.is_flagged() {
-            FLAG.to_owned()
-        } else if self.is_mine() && self.is_exposed() {
-            BOMB.to_owned()
-        } else if self.is_exposed() {
-            let num_adjacent_mines = self.app.board.tile(self.r, self.c).unwrap().adjacent_mines;
-            if num_adjacent_mines == 0 {
-                " ".to_owned()
+        write!(
+            f,
+            "{}",
+            if self.is_flagged() {
+                FLAG.to_owned()
+            } else if self.is_mine() && self.is_exposed() {
+                BOMB.to_owned()
+            } else if self.is_exposed() {
+                let num_adjacent_mines = self
+                    .app
+                    .board
+                    .tile(self.row, self.column)
+                    .unwrap()
+                    .adjacent_mines;
+                if num_adjacent_mines == 0 {
+                    " ".to_owned()
+                } else {
+                    format!("{}", num_adjacent_mines)
+                }
             } else {
-                format!("{}", num_adjacent_mines)
+                " ".to_owned()
             }
-        } else {
-            " ".to_owned()
-        };
-
-        write!(f, "{}", cell_text)
+        )
     }
 }
 
@@ -172,59 +201,57 @@ impl App {
     fn new(board: Board) -> Self {
         Self {
             board,
-            x_pos: 0,
-            y_pos: 0,
+            active_column: 0,
+            active_row: 0,
         }
     }
 
     fn up(&mut self) {
-        if let Some(y_pos) = self.y_pos.checked_sub(1) {
-            self.y_pos = y_pos;
+        if let Some(active_row) = self.active_row.checked_sub(1) {
+            self.active_row = active_row;
         }
     }
 
     fn down(&mut self) {
-        if self.y_pos < self.board.nrows - 1 {
-            self.y_pos += 1;
+        if self.active_row < self.board.rows - 1 {
+            self.active_row += 1;
         }
     }
 
     fn left(&mut self) {
-        if let Some(x_pos) = self.x_pos.checked_sub(1) {
-            self.x_pos = x_pos;
+        if let Some(active_column) = self.active_column.checked_sub(1) {
+            self.active_column = active_column;
         }
     }
 
     fn right(&mut self) {
-        if self.x_pos < self.board.ncolumns - 1 {
-            self.x_pos += 1;
+        if self.active_column < self.board.columns - 1 {
+            self.active_column += 1;
         }
     }
 
-    fn cell<'a>(&'a self, r: u16, c: u16) -> Cell<'a> {
+    fn cell(&self, (r, c): Coordinate) -> Cell {
         Cell::new(self, r, c)
     }
 
-    fn active_cell<'a>(&'a self) -> Cell<'a> {
-        let (r, c) = self.active();
-        Cell::new(self, r, c)
+    fn active_cell(&self) -> Cell {
+        self.cell(self.active())
     }
 
     fn active(&self) -> Coordinate {
-        (self.y_pos, self.x_pos)
+        (self.active_row, self.active_column)
     }
 
-    fn expose(&mut self) -> Result<bool, Error> {
-        let (i, j) = self.active();
-        self.board.expose(i, j)
+    fn expose_active_cell(&mut self) -> Result<bool, Error> {
+        self.board.expose(self.active())
     }
 
     fn expose_all(&mut self) -> Result<(), Error> {
         self.board.expose_all()
     }
 
-    fn win(&self) -> bool {
-        self.board.win()
+    fn won(&self) -> bool {
+        self.board.won()
     }
 
     fn flag_active_cell(&mut self) -> Result<(), Error> {
@@ -406,44 +433,39 @@ impl<W: Write> Ui<W> {
 
                         for (c, cell_rect) in col_rects.into_iter().enumerate() {
                             let c = u16::try_from(c).unwrap();
-                            let cell = app.cell(r, c);
+                            let cell = app.cell((r, c));
                             let single_row_text = format!(
                                 "{:^length$}",
                                 cell.to_string(),
                                 length = usize::from(cell_width - 2)
                             );
                             let pad_line = " ".repeat(usize::from(cell_width));
+
+                            // 1 line for the text, 1 line each for the top and bottom of the cell == 3 lines
+                            // that are not eligible for padding
                             let num_pad_lines = usize::from(cell_height - 3);
-                            let lines = std::iter::repeat(pad_line.clone())
+
+                            // text is:
+                            //   pad with half the pad lines budget
+                            //   the interesting text
+                            //   pad with half the pad lines budget
+                            //   join with newlines
+                            let text = std::iter::repeat(pad_line.clone())
                                 .take(num_pad_lines / 2)
                                 .chain(std::iter::once(single_row_text.clone()))
                                 .chain(std::iter::repeat(pad_line).take(num_pad_lines / 2))
-                                .collect::<Vec<_>>();
+                                .collect::<Vec<_>>()
+                                .join("\n");
 
-                            let cell_paragraph = Paragraph::new(lines.join("\n"))
+                            let cell_text = Paragraph::new(text)
                                 .block(cell.block(lost))
-                                .style(
-                                    Style::default()
-                                        .fg(if cell.is_exposed() && cell.is_mine() {
-                                            Color::LightYellow
-                                        } else if cell.is_exposed() {
-                                            Color::White
-                                        } else {
-                                            Color::Black
-                                        })
-                                        .bg(if cell.is_exposed() {
-                                            Color::Black
-                                        } else if cell.is_active() {
-                                            Color::Cyan
-                                        } else {
-                                            Color::White
-                                        }),
-                                )
-                                .alignment(Alignment::Left);
-                            frame.render_widget(cell_paragraph, cell_rect);
+                                .style(cell.text_style());
+                            frame.render_widget(cell_text, cell_rect);
                         }
                     }
-                    if lost || app.win() {
+
+                    // if the user has lost or won, display a banner indicating so
+                    if lost || app.won() {
                         let area = centered_rect(20, 3, final_mines_rect);
                         frame.render_widget(Clear, area); //this clears out the background
                         frame.render_widget(
@@ -478,9 +500,9 @@ impl<W: Write> Ui<W> {
                     Key::Down | Key::Char('j') => app.down(),
                     Key::Left | Key::Char('h') => app.left(),
                     Key::Right | Key::Char('l') => app.right(),
-                    Key::Char('f') if !lost && !app.win() => app.flag_active_cell()?,
-                    Key::Char(' ') if !lost && !app.win() && !app.active_cell().is_flagged() => {
-                        lost = app.expose()?;
+                    Key::Char('f') if !lost && !app.won() => app.flag_active_cell()?,
+                    Key::Char(' ') if !lost && !app.won() && !app.active_cell().is_flagged() => {
+                        lost = app.expose_active_cell()?;
                         if lost {
                             app.expose_all()?;
                         }
