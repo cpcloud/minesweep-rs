@@ -157,7 +157,7 @@ impl Board {
                 tile.exposed = !(tile.mine || tile.flagged);
 
                 if tile.adjacent_mines == 0 {
-                    coordinates.extend(tile.adjacent_tiles.clone());
+                    coordinates.extend(tile.adjacent_tiles.iter());
                 }
             }
         }
@@ -166,7 +166,6 @@ impl Board {
     }
 
     pub(crate) fn expose_all(&mut self) -> Result<(), Error> {
-        #[allow(clippy::needless_collect)]
         for (i, j) in self.grid.keys().copied().collect::<Vec<_>>().into_iter() {
             self.expose(i, j)?;
         }
