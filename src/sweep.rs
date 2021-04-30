@@ -4,10 +4,6 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 pub(crate) type Coordinate = (u16, u16);
 
-fn index_from_coord((r, c): Coordinate, ncols: u16) -> u16 {
-    r * ncols + c
-}
-
 #[derive(Debug, Clone)]
 pub(crate) struct Tile {
     adjacent_tiles: HashSet<Coordinate>,
@@ -15,22 +11,6 @@ pub(crate) struct Tile {
     pub(crate) exposed: bool,
     pub(crate) flagged: bool,
     pub(crate) adjacent_mines: u8,
-}
-
-impl Tile {
-    pub(crate) fn new(adjacent_tiles: HashSet<Coordinate>, mine: bool, adjacent_mines: u8) -> Self {
-        Self {
-            adjacent_tiles,
-            mine,
-            exposed: false,
-            flagged: false,
-            adjacent_mines,
-        }
-    }
-
-    pub(crate) fn correctly_flagged(&self) -> bool {
-        self.flagged && self.mine
-    }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -83,6 +63,10 @@ pub(crate) struct Board {
     nflagged: u16,
 }
 
+fn index_from_coord((r, c): Coordinate, ncols: u16) -> u16 {
+    r * ncols + c
+}
+
 impl Board {
     pub(crate) fn new(nrows: u16, ncolumns: u16, nmines: u16) -> Result<Self, Error> {
         let mut rng = rand::thread_rng();
@@ -104,7 +88,13 @@ impl Board {
                 });
                 Ok((
                     point,
-                    Tile::new(adjacent_tiles, samples.contains(&i), adjacent_mines),
+                    Tile {
+                        adjacent_tiles,
+                        mine: samples.contains(&i),
+                        exposed: false,
+                        flagged: false,
+                        adjacent_mines,
+                    },
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
@@ -118,14 +108,6 @@ impl Board {
         })
     }
 
-    fn ntiles(&self) -> u16 {
-        self.nrows * self.ncolumns
-    }
-
-    fn total_exposed(&self) -> u16 {
-        self.grid.values().map(|tile| u16::from(tile.exposed)).sum()
-    }
-
     pub(crate) fn available_flags(&self) -> u16 {
         self.nmines - self.nflagged
     }
@@ -134,11 +116,17 @@ impl Board {
         let correctly_flagged_mines = self
             .grid
             .values()
-            .map(|tile| u16::from(tile.correctly_flagged()))
+            .map(|tile| u16::from(tile.flagged && tile.mine))
             .sum::<u16>();
-        let exposed_or_correctly_flagged = self.total_exposed() + correctly_flagged_mines;
-        assert!(exposed_or_correctly_flagged <= self.ntiles());
-        self.ntiles() == exposed_or_correctly_flagged
+        let total_exposed = self
+            .grid
+            .values()
+            .map(|tile| u16::from(tile.exposed))
+            .sum::<u16>();
+        let exposed_or_correctly_flagged = total_exposed + correctly_flagged_mines;
+        let ntiles = self.nrows * self.ncolumns;
+        assert!(exposed_or_correctly_flagged <= ntiles);
+        ntiles == exposed_or_correctly_flagged
     }
 
     pub(crate) fn expose(&mut self, i: u16, j: u16) -> Result<bool, Error> {
