@@ -4,6 +4,10 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 pub(crate) type Coordinate = (u16, u16);
 
+fn index_from_coord((r, c): Coordinate, ncols: u16) -> u16 {
+    r * ncols + c
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct Tile {
     adjacent_tiles: HashSet<Coordinate>,
@@ -14,13 +18,13 @@ pub(crate) struct Tile {
 }
 
 impl Tile {
-    pub(crate) fn new(adjacent_tiles: impl IntoIterator<Item = Coordinate>, mine: bool) -> Self {
+    pub(crate) fn new(adjacent_tiles: HashSet<Coordinate>, mine: bool, adjacent_mines: u8) -> Self {
         Self {
-            adjacent_tiles: adjacent_tiles.into_iter().collect(),
+            adjacent_tiles,
             mine,
             exposed: false,
             flagged: false,
-            adjacent_mines: 0,
+            adjacent_mines,
         }
     }
 
@@ -87,24 +91,23 @@ impl Board {
                 .into_iter()
                 .collect::<HashSet<_>>();
 
-        let mut grid = (0..nrows)
+        let grid = (0..nrows)
             .cartesian_product(0..ncolumns)
             .enumerate()
             .map(|(i, point)| {
+                let adjacent_tiles = adjacent(point, (nrows, ncolumns))?;
+                let adjacent_mines = adjacent_tiles.iter().fold(0, |total, &coord| {
+                    total
+                        + u8::from(
+                            samples.contains(&usize::from(index_from_coord(coord, ncolumns))),
+                        )
+                });
                 Ok((
                     point,
-                    Tile::new(adjacent(point, (nrows, ncolumns))?, samples.contains(&i)),
+                    Tile::new(adjacent_tiles, samples.contains(&i), adjacent_mines),
                 ))
             })
             .collect::<Result<HashMap<_, _>, _>>()?;
-
-        // TODO: avoid this clone somehow
-        let grid_clone = grid.clone();
-        for tile in grid.values_mut() {
-            for coord in tile.adjacent_tiles.iter() {
-                tile.adjacent_mines += u8::from(grid_clone[coord].mine);
-            }
-        }
 
         Ok(Self {
             nrows,
