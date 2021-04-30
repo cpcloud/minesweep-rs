@@ -69,10 +69,10 @@ fn index_from_coord((r, c): Coordinate, ncols: u16) -> usize {
     usize::from(r * ncols + c)
 }
 
-fn coord_from_index(index: usize, ncols: u16) -> Coordinate {
+fn coord_from_index(index: usize, ncols: usize) -> Coordinate {
     (
-        u16::try_from(index / usize::from(ncols)).unwrap(),
-        u16::try_from(index % usize::from(ncols)).unwrap(),
+        u16::try_from(index / ncols).unwrap(),
+        u16::try_from(index % ncols).unwrap(),
     )
 }
 
@@ -163,7 +163,7 @@ impl Board {
     pub(crate) fn expose_all(&mut self) -> Result<(), Error> {
         let columns = self.columns;
         (0..self.tiles.len())
-            .map(move |i| coord_from_index(i, columns))
+            .map(move |i| coord_from_index(i, usize::from(columns)))
             .try_for_each(|coord| {
                 self.expose(coord)?;
                 Ok(())
