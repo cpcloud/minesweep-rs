@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 
 pub(crate) type Coordinate = (u16, u16);
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct Tile {
     adjacent_tiles: HashSet<Coordinate>,
     pub(crate) mine: bool,
