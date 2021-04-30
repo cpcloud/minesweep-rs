@@ -449,7 +449,7 @@ impl<W: Write> Ui<W> {
                             frame.render_widget(cell, cell_rect);
                         }
                     }
-                    if lost || (!lost && app.win()) {
+                    if lost || app.win() {
                         let area = centered_rect(20, 3, final_mines_rect);
                         frame.render_widget(Clear, area); //this clears out the background
                         frame.render_widget(
