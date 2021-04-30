@@ -461,7 +461,7 @@ impl<W: Write> Ui<W> {
                                         .border_style(
                                             Style::default()
                                                 .fg(if lost {
-                                                    Color::LightRed
+                                                    Color::Magenta
                                                 } else {
                                                     Color::LightGreen
                                                 })
