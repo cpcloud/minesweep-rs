@@ -1,10 +1,11 @@
 use crate::{
     error::Error,
     events::{Event, Events},
-    sweep::Board,
+    sweep::{Board, Coordinate},
 };
 use std::{
     convert::TryFrom,
+    fmt,
     io::Write,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -96,6 +97,77 @@ struct App {
     board: Board,
 }
 
+struct Cell<'a> {
+    app: &'a App,
+    r: u16,
+    c: u16,
+}
+
+impl<'a> Cell<'a> {
+    fn new(app: &'a App, r: u16, c: u16) -> Self {
+        Self { app, r, c }
+    }
+
+    fn is_active(&self) -> bool {
+        self.app.active() == (self.r, self.c)
+    }
+
+    fn is_exposed(&self) -> bool {
+        self.app.board.tile(self.r, self.c).unwrap().exposed
+    }
+
+    fn is_flagged(&self) -> bool {
+        self.app.board.tile(self.r, self.c).unwrap().flagged
+    }
+
+    fn is_mine(&self) -> bool {
+        self.app.board.tile(self.r, self.c).unwrap().mine
+    }
+
+    fn block(&self, lost: bool) -> Block {
+        Block::default()
+            .borders(Borders::ALL)
+            .style(
+                Style::default()
+                    .bg(Color::Black)
+                    .fg(if self.is_active() {
+                        Color::Cyan
+                    } else if lost && self.is_mine() {
+                        Color::LightRed
+                    } else {
+                        Color::White
+                    })
+                    .add_modifier(if self.is_active() {
+                        Modifier::BOLD
+                    } else {
+                        Modifier::empty()
+                    }),
+            )
+            .border_type(BorderType::Rounded)
+    }
+}
+
+impl<'a> fmt::Display for Cell<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let cell_text = if self.is_flagged() {
+            FLAG.to_owned()
+        } else if self.is_mine() && self.is_exposed() {
+            BOMB.to_owned()
+        } else if self.is_exposed() {
+            let num_adjacent_mines = self.app.board.tile(self.r, self.c).unwrap().adjacent_mines;
+            if num_adjacent_mines == 0 {
+                " ".to_owned()
+            } else {
+                format!("{}", num_adjacent_mines)
+            }
+        } else {
+            " ".to_owned()
+        };
+
+        write!(f, "{}", cell_text)
+    }
+}
+
 impl App {
     fn new(board: Board) -> Self {
         Self {
@@ -129,7 +201,16 @@ impl App {
         }
     }
 
-    fn active(&self) -> (u16, u16) {
+    fn cell<'a>(&'a self, r: u16, c: u16) -> Cell<'a> {
+        Cell::new(self, r, c)
+    }
+
+    fn active_cell<'a>(&'a self) -> Cell<'a> {
+        let (r, c) = self.active();
+        Cell::new(self, r, c)
+    }
+
+    fn active(&self) -> Coordinate {
         (self.y_pos, self.x_pos)
     }
 
@@ -146,26 +227,10 @@ impl App {
         self.board.win()
     }
 
-    fn flag(&mut self) -> Result<(), Error> {
+    fn flag_active_cell(&mut self) -> Result<(), Error> {
         let (r, c) = self.active();
         self.board.flag(r, c)?;
         Ok(())
-    }
-
-    fn flagged(&self, r: u16, c: u16) -> Result<bool, Error> {
-        Ok(self.board.tile(r, c)?.flagged)
-    }
-
-    fn mine(&self, r: u16, c: u16) -> Result<bool, Error> {
-        Ok(self.board.tile(r, c)?.mine)
-    }
-
-    fn exposed(&self, r: u16, c: u16) -> Result<bool, Error> {
-        Ok(self.board.tile(r, c)?.exposed)
-    }
-
-    fn num_adjacent_mines(&self, r: u16, c: u16) -> Result<u8, Error> {
-        Ok(self.board.tile(r, c)?.adjacent_mines)
     }
 }
 
@@ -231,15 +296,12 @@ impl<W: Write> Ui<W> {
                     let available_flags = app.board.available_flags();
                     let info_text = Gauge::default()
                         .block(
-                            Block::default()
-                                .borders(Borders::ALL)
-                                .title(Span::styled(
-                                    FLAG,
-                                    Style::default()
-                                        .fg(Color::LightMagenta)
-                                        .add_modifier(Modifier::BOLD),
-                                ))
-                                .style(Style::default().add_modifier(Modifier::SLOW_BLINK)),
+                            Block::default().borders(Borders::ALL).title(Span::styled(
+                                FLAG,
+                                Style::default()
+                                    .fg(Color::LightMagenta)
+                                    .add_modifier(Modifier::BOLD),
+                            )),
                         )
                         .gauge_style(
                             Style::default()
@@ -295,7 +357,7 @@ impl<W: Write> Ui<W> {
                     let info_text_split_rects = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints(vec![
-                            Constraint::Length(vertical_pad_block_height - 3),
+                            Constraint::Min(vertical_pad_block_height - 3),
                             Constraint::Length(3),
                         ])
                         .split(middle_mines_rects[0]);
@@ -308,15 +370,12 @@ impl<W: Write> Ui<W> {
 
                     let mines_text = Paragraph::new(mines.to_string())
                         .block(
-                            Block::default()
-                                .borders(Borders::ALL)
-                                .title(Span::styled(
-                                    BOMB,
-                                    Style::default()
-                                        .fg(Color::LightYellow)
-                                        .add_modifier(Modifier::BOLD),
-                                ))
-                                .style(Style::default().add_modifier(Modifier::SLOW_BLINK)),
+                            Block::default().borders(Borders::ALL).title(Span::styled(
+                                BOMB,
+                                Style::default()
+                                    .fg(Color::LightYellow)
+                                    .add_modifier(Modifier::BOLD),
+                            )),
                         )
                         .alignment(Alignment::Center);
                     frame.render_widget(mines_text, info_mines_rects[1]);
@@ -347,53 +406,12 @@ impl<W: Write> Ui<W> {
 
                         for (c, cell_rect) in col_rects.into_iter().enumerate() {
                             let c = u16::try_from(c).unwrap();
-
-                            let is_cell_active = app.active() == (r, c);
-                            let is_cell_exposed = app.exposed(r, c).unwrap();
-                            let is_cell_mine = app.mine(r, c).unwrap();
-                            let is_cell_flagged = app.flagged(r, c).unwrap();
-
-                            let block = Block::default()
-                                .borders(Borders::ALL)
-                                .style(
-                                    Style::default()
-                                        .bg(Color::Black)
-                                        .fg(if is_cell_active {
-                                            Color::Cyan
-                                        } else if lost && is_cell_mine {
-                                            Color::LightRed
-                                        } else {
-                                            Color::White
-                                        })
-                                        .add_modifier(if is_cell_active {
-                                            Modifier::BOLD
-                                        } else {
-                                            Modifier::empty()
-                                        }),
-                                )
-                                .border_type(BorderType::Rounded);
-
-                            let cell_text = if is_cell_flagged {
-                                FLAG.to_owned()
-                            } else if is_cell_mine && is_cell_exposed {
-                                BOMB.to_owned()
-                            } else if is_cell_exposed {
-                                let num_mines = app.num_adjacent_mines(r, c).unwrap();
-                                if num_mines == 0 {
-                                    " ".to_owned()
-                                } else {
-                                    format!("{}", num_mines)
-                                }
-                            } else {
-                                " ".to_owned()
-                            };
-
+                            let cell = app.cell(r, c);
                             let single_row_text = format!(
                                 "{:^length$}",
-                                cell_text,
+                                cell.to_string(),
                                 length = usize::from(cell_width - 2)
                             );
-
                             let pad_line = " ".repeat(usize::from(cell_width));
                             let num_pad_lines = usize::from(cell_height - 3);
                             let lines = std::iter::repeat(pad_line.clone())
@@ -402,27 +420,27 @@ impl<W: Write> Ui<W> {
                                 .chain(std::iter::repeat(pad_line).take(num_pad_lines / 2))
                                 .collect::<Vec<_>>();
 
-                            let cell = Paragraph::new(lines.join("\n"))
-                                .block(block)
+                            let cell_paragraph = Paragraph::new(lines.join("\n"))
+                                .block(cell.block(lost))
                                 .style(
                                     Style::default()
-                                        .fg(if is_cell_exposed && is_cell_mine {
+                                        .fg(if cell.is_exposed() && cell.is_mine() {
                                             Color::LightYellow
-                                        } else if is_cell_exposed {
+                                        } else if cell.is_exposed() {
                                             Color::White
                                         } else {
                                             Color::Black
                                         })
-                                        .bg(if is_cell_exposed {
+                                        .bg(if cell.is_exposed() {
                                             Color::Black
-                                        } else if is_cell_active {
+                                        } else if cell.is_active() {
                                             Color::Cyan
                                         } else {
                                             Color::White
                                         }),
                                 )
                                 .alignment(Alignment::Left);
-                            frame.render_widget(cell, cell_rect);
+                            frame.render_widget(cell_paragraph, cell_rect);
                         }
                     }
                     if lost || app.win() {
@@ -460,13 +478,8 @@ impl<W: Write> Ui<W> {
                     Key::Down | Key::Char('j') => app.down(),
                     Key::Left | Key::Char('h') => app.left(),
                     Key::Right | Key::Char('l') => app.right(),
-                    Key::Char('f') if !lost && !app.win() => app.flag()?,
-                    Key::Char(' ')
-                        if !lost && !app.win() && {
-                            let (i, j) = app.active();
-                            !app.flagged(i, j)?
-                        } =>
-                    {
+                    Key::Char('f') if !lost && !app.win() => app.flag_active_cell()?,
+                    Key::Char(' ') if !lost && !app.win() && !app.active_cell().is_flagged() => {
                         lost = app.expose()?;
                         if lost {
                             app.expose_all()?;
