@@ -52,6 +52,28 @@ fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
         .split(popup_layout[1])[1]
 }
 
+fn align_strings_to_char(strings: &[&str], c: char) -> Vec<String> {
+    let (firsts, rests): (Vec<_>, Vec<_>) = strings
+        .iter()
+        .map(|&s| s.split_at(s.find(c).unwrap()))
+        .unzip();
+    let max_firsts = firsts.iter().map(|&f| f.len()).max().unwrap();
+    let max_rests = rests.iter().map(|&r| r.len()).max().unwrap();
+    firsts
+        .into_iter()
+        .zip(rests.into_iter())
+        .map(|(first, rest)| {
+            format!(
+                "{:>left_length$}{:<right_length$}",
+                first,
+                rest,
+                left_length = max_firsts,
+                right_length = max_rests
+            )
+        })
+        .collect()
+}
+
 #[derive(typed_builder::TypedBuilder)]
 pub(crate) struct Ui<W>
 where
@@ -276,23 +298,21 @@ impl<W: Write> Ui<W> {
                         ])
                         .split(mines_rects[1]);
 
-                    let help_text_block = List::new(vec![
-                        ListItem::new(format!(
-                            "{:^length$}",
-                            "movement: hjkl / 🠔 🠗 🠕 🠖",
-                            length = usize::from(grid_width),
-                        )),
-                        ListItem::new(format!(
-                            "{:^length$}",
-                            "expose: spacebar",
-                            length = usize::from(grid_width),
-                        )),
-                        ListItem::new(format!(
-                            "{:^length$}",
-                            "flag: f",
-                            length = usize::from(grid_width)
-                        )),
-                    ])
+                    let help_text_block = List::new(
+                        align_strings_to_char(
+                            &[
+                                "movement: hjkl / 🠔 🠗 🠕 🠖",
+                                "expose tile: spacebar",
+                                "flag tile: f",
+                                "quit: q",
+                            ],
+                            ':',
+                        )
+                        .into_iter()
+                        .map(|line| format!("{:^width$}", line, width = usize::from(grid_width)))
+                        .map(ListItem::new)
+                        .collect::<Vec<_>>(),
+                    )
                     .block(Block::default().borders(Borders::NONE));
                     frame.render_widget(help_text_block, middle_mines_rects[2]);
 
@@ -322,7 +342,7 @@ impl<W: Write> Ui<W> {
                                 ))
                                 .style(Style::default().add_modifier(Modifier::SLOW_BLINK)),
                         )
-                        .alignment(Alignment::Right);
+                        .alignment(Alignment::Center);
                     frame.render_widget(mines_text, info_mines_rects[1]);
 
                     let mines_block = Block::default()
