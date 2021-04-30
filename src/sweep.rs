@@ -161,12 +161,13 @@ impl Board {
     }
 
     pub(crate) fn expose_all(&mut self) -> Result<(), Error> {
-        let len = self.tiles.len();
         let columns = self.columns;
-        for coord in (0..len).map(move |i| coord_from_index(i, columns)) {
-            self.expose(coord)?;
-        }
-        Ok(())
+        (0..self.tiles.len())
+            .map(move |i| coord_from_index(i, columns))
+            .try_for_each(|coord| {
+                self.expose(coord)?;
+                Ok(())
+            })
     }
 
     pub(crate) fn tile(&self, i: u16, j: u16) -> Result<&Tile, Error> {
