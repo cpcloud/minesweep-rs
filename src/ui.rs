@@ -15,10 +15,42 @@ use termion::event::Key;
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Paragraph},
+    style::{Color, Modifier, Style},
+    text::Span,
+    widgets::{Block, BorderType, Borders, Clear, Gauge, List, ListItem, Paragraph},
     Terminal,
 };
+
+fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
+    let Rect {
+        width: grid_width,
+        height: grid_height,
+        ..
+    } = r;
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(grid_height / 2 - height / 2),
+                Constraint::Length(height),
+                Constraint::Length(grid_height / 2 - height / 2),
+            ]
+            .as_ref(),
+        )
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Length(grid_width / 2 - width / 2),
+                Constraint::Length(width),
+                Constraint::Length(grid_width / 2 - width / 2),
+            ]
+            .as_ref(),
+        )
+        .split(popup_layout[1])[1]
+}
 
 #[derive(typed_builder::TypedBuilder)]
 pub(crate) struct Ui<W>
@@ -144,6 +176,7 @@ impl<W: Write> Ui<W> {
         let events = Events::new();
         let rows = self.rows;
         let columns = self.columns;
+        let mines = self.mines;
 
         let running = Arc::new(AtomicBool::new(true));
         let running_clone = running.clone();
@@ -169,7 +202,7 @@ impl<W: Write> Ui<W> {
             .take(columns.into())
             .collect::<Vec<_>>();
 
-        let mut app = App::new(Board::new(rows, columns, self.mines)?);
+        let mut app = App::new(Board::new(rows, columns, mines)?);
         let mut lost = false;
 
         while running.load(Ordering::SeqCst) {
@@ -179,42 +212,132 @@ impl<W: Write> Ui<W> {
 
                     let outer_block = Block::default()
                         .borders(Borders::ALL)
-                        .title("Minesweeper")
+                        .title(Span::styled(
+                            "Minesweeper",
+                            Style::default()
+                                .fg(Color::LightYellow)
+                                .add_modifier(Modifier::BOLD),
+                        ))
                         .border_type(BorderType::Rounded);
                     frame.render_widget(outer_block, terminal_rect);
 
                     let outer_rects = Layout::default()
                         .direction(Direction::Vertical)
-                        .margin(1)
-                        .constraints(vec![Constraint::Percentage(10), Constraint::Percentage(90)])
+                        .vertical_margin(1)
+                        .horizontal_margin(1)
+                        .constraints(vec![Constraint::Min(grid_height)])
                         .split(terminal_rect);
 
-                    let info_rect = outer_rects[0];
-                    let mines_rect = outer_rects[1];
+                    let mines_rect = outer_rects[0];
 
-                    let info_block = Block::default()
-                        .borders(Borders::ALL)
-                        .border_type(BorderType::Rounded);
-                    frame.render_widget(info_block, info_rect);
+                    let available_flags = app.board.available_flags();
+                    let info_text = Gauge::default()
+                        .block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .title(Span::styled(
+                                    FLAG,
+                                    Style::default()
+                                        .fg(Color::LightMagenta)
+                                        .add_modifier(Modifier::BOLD),
+                                ))
+                                .style(Style::default().add_modifier(Modifier::SLOW_BLINK)),
+                        )
+                        .gauge_style(
+                            Style::default()
+                                .fg(Color::White)
+                                .bg(Color::Black)
+                                .add_modifier(Modifier::BOLD),
+                        )
+                        .label(format!(
+                            "{:>length$}",
+                            available_flags,
+                            length = f64::from(available_flags).log10().ceil() as usize + 1
+                        ))
+                        .ratio(f64::from(available_flags) / f64::from(mines));
+
+                    let horizontal_pad_block_width = (terminal_rect.width - grid_width) / 2;
+                    let mines_rects = Layout::default()
+                        .direction(Direction::Horizontal)
+                        .constraints(vec![
+                            Constraint::Min(horizontal_pad_block_width),
+                            Constraint::Length(grid_width),
+                            Constraint::Min(horizontal_pad_block_width),
+                        ])
+                        .split(mines_rect);
+
+                    let vertical_pad_block_height = (mines_rect.height - grid_height) / 2;
+                    let middle_mines_rects = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints(vec![
+                            Constraint::Min(vertical_pad_block_height),
+                            Constraint::Length(grid_height),
+                            Constraint::Min(vertical_pad_block_height),
+                        ])
+                        .split(mines_rects[1]);
+
+                    let help_text_block = List::new(vec![
+                        ListItem::new(format!(
+                            "{:^length$}",
+                            "movement: hjkl / 🠔 🠗 🠕 🠖",
+                            length = usize::from(grid_width),
+                        )),
+                        ListItem::new(format!(
+                            "{:^length$}",
+                            "expose: spacebar",
+                            length = usize::from(grid_width),
+                        )),
+                        ListItem::new(format!(
+                            "{:^length$}",
+                            "flag: f",
+                            length = usize::from(grid_width)
+                        )),
+                    ])
+                    .block(Block::default().borders(Borders::NONE));
+                    frame.render_widget(help_text_block, middle_mines_rects[2]);
+
+                    let info_text_split_rects = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints(vec![
+                            Constraint::Length(vertical_pad_block_height - 3),
+                            Constraint::Length(3),
+                        ])
+                        .split(middle_mines_rects[0]);
+
+                    let info_mines_rects = Layout::default()
+                        .direction(Direction::Horizontal)
+                        .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+                        .split(info_text_split_rects[1]);
+                    frame.render_widget(info_text, info_mines_rects[0]);
+
+                    let mines_text = Paragraph::new(mines.to_string())
+                        .block(
+                            Block::default()
+                                .borders(Borders::ALL)
+                                .title(Span::styled(
+                                    BOMB,
+                                    Style::default()
+                                        .fg(Color::LightYellow)
+                                        .add_modifier(Modifier::BOLD),
+                                ))
+                                .style(Style::default().add_modifier(Modifier::SLOW_BLINK)),
+                        )
+                        .alignment(Alignment::Right);
+                    frame.render_widget(mines_text, info_mines_rects[1]);
 
                     let mines_block = Block::default()
                         .borders(Borders::ALL)
                         .border_type(BorderType::Rounded);
-                    frame.render_widget(mines_block, mines_rect);
 
-                    let mines_block_size = Rect::new(
-                        (mines_rect.width / 2).saturating_sub(grid_width / 2),
-                        (mines_rect.y + (mines_rect.y + mines_rect.height) / 2) / 2,
-                        grid_width,
-                        grid_height,
-                    );
+                    let final_mines_rect = middle_mines_rects[1];
+                    frame.render_widget(mines_block, final_mines_rect);
 
                     let row_rects = Layout::default()
                         .direction(Direction::Vertical)
                         .vertical_margin(1)
                         .horizontal_margin(0)
                         .constraints(row_constraints.clone())
-                        .split(mines_rect);
+                        .split(final_mines_rect);
 
                     for (r, row_rect) in row_rects.into_iter().enumerate() {
                         let col_rects = Layout::default()
@@ -236,19 +359,13 @@ impl<W: Write> Ui<W> {
 
                             let block = Block::default()
                                 .borders(Borders::ALL)
-                                .style(
-                                    Style::default()
-                                        .bg(if is_cell_active {
-                                            Color::White
-                                        } else {
-                                            Color::Black
-                                        })
-                                        .fg(if is_cell_active {
-                                            Color::Black
-                                        } else {
-                                            Color::White
-                                        }),
-                                )
+                                .style(Style::default().bg(Color::Black).fg(if is_cell_active {
+                                    Color::Cyan
+                                } else if lost && is_cell_mine {
+                                    Color::LightRed
+                                } else {
+                                    Color::White
+                                }))
                                 .border_type(BorderType::Rounded);
 
                             let cell_text = if is_cell_flagged {
@@ -265,11 +382,13 @@ impl<W: Write> Ui<W> {
                             } else {
                                 " ".to_owned()
                             };
+
                             let single_row_text = format!(
                                 "{:^length$}",
                                 cell_text,
                                 length = usize::from(cell_width - 2)
                             );
+
                             let pad_line = " ".repeat(usize::from(cell_width));
                             let num_pad_lines = usize::from(cell_height - 3);
                             let lines = std::iter::repeat(pad_line.clone())
@@ -282,26 +401,45 @@ impl<W: Write> Ui<W> {
                                 .block(block)
                                 .style(
                                     Style::default()
-                                        .fg(
-                                            if app.active() == (r, c) || app.exposed(r, c).unwrap()
-                                            {
-                                                Color::White
-                                            } else {
-                                                Color::Black
-                                            },
-                                        )
-                                        .bg(
-                                            if app.active() == (r, c) || app.exposed(r, c).unwrap()
-                                            {
-                                                Color::Black
-                                            } else {
-                                                Color::White
-                                            },
-                                        ),
+                                        .fg(if is_cell_exposed && is_cell_mine {
+                                            Color::LightYellow
+                                        } else if is_cell_exposed {
+                                            Color::White
+                                        } else {
+                                            Color::Black
+                                        })
+                                        .bg(if is_cell_exposed {
+                                            Color::Black
+                                        } else if is_cell_active {
+                                            Color::Cyan
+                                        } else {
+                                            Color::White
+                                        }),
                                 )
                                 .alignment(Alignment::Left);
                             frame.render_widget(cell, cell_rect);
                         }
+                    }
+                    if !lost && app.win() {
+                        let area = centered_rect(20, 3, final_mines_rect);
+                        frame.render_widget(Clear, area); //this clears out the background
+                        frame.render_widget(
+                            Paragraph::new("You won!")
+                                .block(
+                                    Block::default()
+                                        .borders(Borders::ALL)
+                                        .border_type(BorderType::Double)
+                                        .border_style(
+                                            Style::default()
+                                                .fg(Color::LightGreen)
+                                                .add_modifier(Modifier::BOLD),
+                                        )
+                                        .style(Style::default().add_modifier(Modifier::BOLD)),
+                                )
+                                .alignment(Alignment::Center)
+                                .style(Style::default()),
+                            area,
+                        );
                     }
                 })
                 .map_err(Error::DrawToTerminal)?;
