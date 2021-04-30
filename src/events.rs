@@ -16,14 +16,12 @@ pub(crate) struct Events {
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Config {
-    pub(crate) exit_key: Key,
-    pub(crate) tick_rate: Duration,
+    tick_rate: Duration,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            exit_key: Key::Char('q'),
+impl Config {
+    fn new() -> Self {
+        Self {
             tick_rate: Duration::from_millis(250),
         }
     }
@@ -31,7 +29,7 @@ impl Default for Config {
 
 impl Events {
     pub(crate) fn new() -> Self {
-        Self::with_config(Config::default())
+        Self::with_config(Config::new())
     }
 
     pub(crate) fn with_config(config: Config) -> Self {
