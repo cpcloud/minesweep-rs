@@ -63,15 +63,15 @@ pub(crate) struct Board {
     nflagged: u16,
 }
 
-fn index_from_coord((r, c): Coordinate, ncols: u16) -> u16 {
-    r * ncols + c
+fn index_from_coord((r, c): Coordinate, ncols: u16) -> usize {
+    usize::from(r * ncols + c)
 }
 
 impl Board {
     pub(crate) fn new(nrows: u16, ncolumns: u16, nmines: u16) -> Result<Self, Error> {
         let mut rng = rand::thread_rng();
         let samples =
-            rand::seq::index::sample(&mut rng, usize::from(nrows * ncolumns), nmines as usize)
+            rand::seq::index::sample(&mut rng, usize::from(nrows * ncolumns), usize::from(nmines))
                 .into_iter()
                 .collect::<HashSet<_>>();
 
@@ -81,11 +81,10 @@ impl Board {
             .map(|(i, point)| {
                 let adjacent_tiles = adjacent(point, (nrows, ncolumns))?;
                 let adjacent_mines = adjacent_tiles.iter().fold(0, |total, &coord| {
-                    total
-                        + u8::from(
-                            samples.contains(&usize::from(index_from_coord(coord, ncolumns))),
-                        )
+                    total + u8::from(samples.contains(&index_from_coord(coord, ncolumns)))
                 });
+                assert!(adjacent_mines <= 8);
+
                 Ok((
                     point,
                     Tile {
