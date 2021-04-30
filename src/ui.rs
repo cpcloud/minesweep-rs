@@ -379,13 +379,22 @@ impl<W: Write> Ui<W> {
 
                             let block = Block::default()
                                 .borders(Borders::ALL)
-                                .style(Style::default().bg(Color::Black).fg(if is_cell_active {
-                                    Color::Cyan
-                                } else if lost && is_cell_mine {
-                                    Color::LightRed
-                                } else {
-                                    Color::White
-                                }))
+                                .style(
+                                    Style::default()
+                                        .bg(Color::Black)
+                                        .fg(if is_cell_active {
+                                            Color::Cyan
+                                        } else if lost && is_cell_mine {
+                                            Color::LightRed
+                                        } else {
+                                            Color::White
+                                        })
+                                        .add_modifier(if is_cell_active {
+                                            Modifier::BOLD
+                                        } else {
+                                            Modifier::empty()
+                                        }),
+                                )
                                 .border_type(BorderType::Rounded);
 
                             let cell_text = if is_cell_flagged {
@@ -440,18 +449,22 @@ impl<W: Write> Ui<W> {
                             frame.render_widget(cell, cell_rect);
                         }
                     }
-                    if !lost && app.win() {
+                    if lost || (!lost && app.win()) {
                         let area = centered_rect(20, 3, final_mines_rect);
                         frame.render_widget(Clear, area); //this clears out the background
                         frame.render_widget(
-                            Paragraph::new("You won!")
+                            Paragraph::new(format!("You {}!", if lost { "lost" } else { "won" }))
                                 .block(
                                     Block::default()
                                         .borders(Borders::ALL)
                                         .border_type(BorderType::Double)
                                         .border_style(
                                             Style::default()
-                                                .fg(Color::LightGreen)
+                                                .fg(if lost {
+                                                    Color::LightRed
+                                                } else {
+                                                    Color::LightGreen
+                                                })
                                                 .add_modifier(Modifier::BOLD),
                                         )
                                         .style(Style::default().add_modifier(Modifier::BOLD)),
