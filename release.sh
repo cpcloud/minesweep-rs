@@ -49,7 +49,7 @@ fi
 
 cargo release ${DRY_RUN} "$PATCH_LEVEL"
 
-tag="$(git describe --abbrev=0 --exact-match)"
+tag="$(git describe --abbrev=0)"
 title="Release $tag"
 
 if [ -z "$TARGET" ]; then
