@@ -1,12 +1,11 @@
 [package]
 name = "sweep"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Phillip Cloud"]
 edition = "2018"
 
 [dependencies]
 anyhow = "1"
-bitflags = "1"
 ctrlc = "3"
 itertools = "0.10"
 rand = "0.8"

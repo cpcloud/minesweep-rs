@@ -289,10 +289,9 @@ dependencies = [
 
 [[package]]
 name = "sweep"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "anyhow",
- "bitflags",
  "ctrlc",
  "itertools",
  "rand",
