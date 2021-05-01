@@ -24,13 +24,13 @@ jobs:
         run: docker load -i "$(nix path-info -L -f. sweepImage)"
 
       - name: Create a temporary Dockerfile
-        run: echo "FROM turbocheck:$(nix eval -f. --raw sweepImage.imageTag)" > Dockerfile
+        run: echo "FROM sweep:$(nix eval -f. --raw sweepImage.imageTag)" > Dockerfile
 
       - name: Push to Dockerhub
         uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: cpcloud86/sweep-rs
+          repository: cpcloud86/sweep
           tag_with_ref: true
           tag_with_sha: true
