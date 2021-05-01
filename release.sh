@@ -1,7 +1,6 @@
-#!/usr/bin/env nix-shell
-#!nix-shell --keep GITHUB_USER --keep GITHUB_TOKEN --pure -i bash -p cacert cargo cargo-release gitAndTools.gh git jq yj util-linux
+#!/usr/bin/env bash
 
-set -eo pipefail
+set -exo pipefail
 
 options="$(getopt -o d --long notes: --long patch-level: --long target: -- "$@")"
 eval set -- "$options"
