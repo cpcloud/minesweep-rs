@@ -18,7 +18,6 @@ typed-builder = "0.9"
 
 [package.metadata.release]
 disable-push = false
-disable-tag = true
+disable-tag = false
 disable-publish = true
 tag-prefix = ""
-no-dev-version = true
