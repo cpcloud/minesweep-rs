@@ -14,3 +14,10 @@ termion = "1"
 thiserror = "1"
 tui = "0.14"
 typed-builder = "0.9"
+
+[package.metadata.release]
+disable-push = false
+disable-tag = true
+disable-publish = true
+tag-prefix = ""
+no-dev-version = true
