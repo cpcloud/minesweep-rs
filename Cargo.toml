@@ -3,6 +3,7 @@ name = "sweep"
 version = "1.0.0"
 authors = ["Phillip Cloud"]
 edition = "2018"
+publish = false
 
 [dependencies]
 anyhow = "1"
@@ -21,3 +22,4 @@ disable-push = false
 disable-tag = false
 disable-publish = true
 tag-prefix = ""
+no-dev-version = false
