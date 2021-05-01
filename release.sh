@@ -49,7 +49,7 @@ fi
 
 cargo release ${DRY_RUN} "$PATCH_LEVEL"
 
-tag="$(yj -tj <Cargo.toml | jq '.package.version' -rcM)"
+tag="$(git describe --abbrev=0 --exact-match)"
 title="Release $tag"
 
 if [ -z "$TARGET" ]; then
