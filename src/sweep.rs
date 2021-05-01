@@ -76,7 +76,7 @@ fn coord_from_index(index: usize, columns: u16) -> Coordinate {
 }
 
 impl Board {
-    pub(crate) fn new(rows: u16, columns: u16, mines: u16) -> Result<Self, Error> {
+    pub(crate) fn new(rows: u16, columns: u16, mines: u16) -> Self {
         let mut rng = rand::thread_rng();
         let samples =
             rand::seq::index::sample(&mut rng, usize::from(rows * columns), usize::from(mines))
@@ -106,13 +106,13 @@ impl Board {
             })
             .collect::<Vec<_>>();
 
-        Ok(Self {
+        Self {
             rows,
             columns,
             tiles,
             mines,
             flagged_cells: 0,
-        })
+        }
     }
 
     pub(crate) fn available_flags(&self) -> u16 {

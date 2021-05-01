@@ -292,7 +292,7 @@ impl<W: Write> Ui<W> {
             .take(columns.into())
             .collect::<Vec<_>>();
 
-        let mut app = App::new(Board::new(rows, columns, mines)?);
+        let mut app = App::new(Board::new(rows, columns, mines));
         let mut lost = false;
 
         while running.load(Ordering::SeqCst) {
