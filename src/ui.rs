@@ -5,14 +5,13 @@ use crate::{
 };
 use std::{
     convert::TryFrom,
-    fmt,
-    io::Write,
+    fmt, io,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
     },
 };
-use termion::event::Key;
+use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
 use tui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -76,16 +75,12 @@ fn align_strings_to_char(strings: &[&str], c: char) -> Vec<String> {
 }
 
 #[derive(typed_builder::TypedBuilder)]
-pub(crate) struct Ui<W>
-where
-    W: Write,
-{
+pub(crate) struct Ui {
     rows: u16,
     columns: u16,
-    mines: u16,
+    mines: u32,
     cell_width: u16,
     cell_height: u16,
-    terminal: Terminal<TermionBackend<W>>,
 }
 
 const BOMB: &str = "💣";
@@ -261,7 +256,7 @@ impl App {
     }
 }
 
-impl<W: Write> Ui<W> {
+impl Ui {
     pub(crate) fn run(&mut self) -> Result<(), Error> {
         let events = Events::new();
         let rows = self.rows;
@@ -292,11 +287,19 @@ impl<W: Write> Ui<W> {
             .take(columns.into())
             .collect::<Vec<_>>();
 
-        let mut app = App::new(Board::new(rows, columns, mines));
+        let mut app = App::new(Board::new(rows, columns, mines)?);
         let mut lost = false;
 
+        let stdout = io::stdout()
+            .into_raw_mode()
+            .map_err(Error::GetStdoutInRawMode)?;
+        let mouse_terminal = MouseTerminal::from(stdout);
+        let alt_screen = AlternateScreen::from(mouse_terminal);
+        let backend = TermionBackend::new(alt_screen);
+        let mut terminal = Terminal::new(backend).map_err(Error::CreateTerminal)?;
+
         while running.load(Ordering::SeqCst) {
-            self.terminal
+            terminal
                 .draw(|frame| {
                     let terminal_rect = frame.size();
 

@@ -59,8 +59,8 @@ pub(crate) struct Board {
     tiles: Vec<Tile>,
     pub(crate) rows: u16,
     pub(crate) columns: u16,
-    mines: u16,
-    flagged_cells: u16,
+    mines: u32,
+    flagged_cells: u32,
 }
 
 fn index_from_coord((r, c): Coordinate, columns: u16) -> usize {
@@ -76,12 +76,15 @@ fn coord_from_index(index: usize, columns: u16) -> Coordinate {
 }
 
 impl Board {
-    pub(crate) fn new(rows: u16, columns: u16, mines: u16) -> Self {
+    pub(crate) fn new(rows: u16, columns: u16, mines: u32) -> Result<Self, Error> {
         let mut rng = rand::thread_rng();
-        let samples =
-            rand::seq::index::sample(&mut rng, usize::from(rows * columns), usize::from(mines))
-                .into_iter()
-                .collect::<BitSet>();
+        let samples = rand::seq::index::sample(
+            &mut rng,
+            usize::from(rows) * usize::from(columns),
+            usize::try_from(mines).map_err(Error::ConvertU32ToUsize)?,
+        )
+        .into_iter()
+        .collect::<BitSet>();
 
         let tiles = (0..rows)
             .cartesian_product(0..columns)
@@ -106,16 +109,16 @@ impl Board {
             })
             .collect::<Vec<_>>();
 
-        Self {
+        Ok(Self {
             rows,
             columns,
             tiles,
             mines,
             flagged_cells: 0,
-        }
+        })
     }
 
-    pub(crate) fn available_flags(&self) -> u16 {
+    pub(crate) fn available_flags(&self) -> u32 {
         self.mines - self.flagged_cells
     }
 
