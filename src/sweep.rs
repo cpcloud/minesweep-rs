@@ -1,4 +1,5 @@
 use crate::error::Error;
+use bit_set::BitSet;
 use itertools::Itertools;
 use std::{
     collections::{HashSet, VecDeque},
@@ -9,7 +10,7 @@ pub(crate) type Coordinate = (u16, u16);
 
 #[derive(Debug)]
 pub(crate) struct Tile {
-    adjacent_tiles: HashSet<Coordinate>,
+    adjacent_tiles: BitSet,
     pub(crate) mine: bool,
     pub(crate) exposed: bool,
     pub(crate) flagged: bool,
@@ -33,28 +34,25 @@ impl Increment {
     }
 }
 
-const INCREMENTS: [Increment; 3] = [Increment::One, Increment::NegOne, Increment::Zero];
+fn adjacent((row, column): Coordinate, rows: u16, columns: u16) -> impl Iterator<Item = usize> {
+    const INCREMENTS: [Increment; 3] = [Increment::One, Increment::NegOne, Increment::Zero];
 
-fn adjacent(
-    (i, j): Coordinate,
-    (nrows, ncolumns): (u16, u16),
-) -> Result<impl Iterator<Item = Coordinate>, Error> {
-    Ok(INCREMENTS
+    INCREMENTS
         .iter()
         .copied()
         .cartesian_product(INCREMENTS.iter().copied())
-        .filter_map(move |(x, y)| {
-            let x_offset = x.offset(i);
-            let y_offset = y.offset(j);
-            if (x != Increment::Zero || y != Increment::Zero)
-                && x_offset < nrows
-                && y_offset < ncolumns
-            {
-                Some((x_offset, y_offset))
-            } else {
-                None
+        .filter_map(move |(row_incr, column_incr)| {
+            let row_offset = row_incr.offset(row);
+            let column_offset = column_incr.offset(column);
+
+            match (row_incr, column_incr) {
+                (Increment::Zero, Increment::Zero) => None,
+                (_, _) if row_offset < rows && column_offset < columns => {
+                    Some(index_from_coord((row_offset, column_offset), columns))
+                }
+                _ => None,
             }
-        }))
+        })
 }
 
 pub(crate) struct Board {
@@ -65,52 +63,54 @@ pub(crate) struct Board {
     flagged_cells: u16,
 }
 
-fn index_from_coord((r, c): Coordinate, ncols: u16) -> usize {
-    usize::from(r * ncols + c)
+fn index_from_coord((r, c): Coordinate, columns: u16) -> usize {
+    usize::from(r * columns + c)
 }
 
-fn coord_from_index(index: usize, ncols: usize) -> Coordinate {
+fn coord_from_index(index: usize, columns: u16) -> Coordinate {
+    let columns = usize::from(columns);
     (
-        u16::try_from(index / ncols).unwrap(),
-        u16::try_from(index % ncols).unwrap(),
+        u16::try_from(index / columns).unwrap(),
+        u16::try_from(index % columns).unwrap(),
     )
 }
 
 impl Board {
-    pub(crate) fn new(nrows: u16, ncolumns: u16, nmines: u16) -> Result<Self, Error> {
+    pub(crate) fn new(rows: u16, columns: u16, mines: u16) -> Result<Self, Error> {
         let mut rng = rand::thread_rng();
         let samples =
-            rand::seq::index::sample(&mut rng, usize::from(nrows * ncolumns), usize::from(nmines))
+            rand::seq::index::sample(&mut rng, usize::from(rows * columns), usize::from(mines))
                 .into_iter()
-                .collect::<HashSet<_>>();
+                .collect::<BitSet>();
 
-        let grid = (0..nrows)
-            .cartesian_product(0..ncolumns)
+        let tiles = (0..rows)
+            .cartesian_product(0..columns)
             .enumerate()
             .map(|(i, point)| {
-                let adjacent_tiles = adjacent(point, (nrows, ncolumns))?.collect::<HashSet<_>>();
+                // compute the tiles adjacent to the one being constructed
+                let adjacent_tiles = adjacent(point, rows, columns).collect::<BitSet>();
 
                 // sum the number of adjacent tiles that are in the randomly generated mines set
-                let adjacent_mines = adjacent_tiles.iter().fold(0, |total, &coord| {
-                    total + u8::from(samples.contains(&index_from_coord(coord, ncolumns)))
-                });
+                let adjacent_mines = adjacent_tiles
+                    .iter()
+                    .fold(0, |total, index| total + u8::from(samples.contains(index)));
                 assert!(adjacent_mines <= 8);
 
-                Ok(Tile {
+                Tile {
                     adjacent_tiles,
-                    mine: samples.contains(&i),
+                    mine: samples.contains(i),
                     exposed: false,
                     flagged: false,
                     adjacent_mines,
-                })
+                }
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect::<Vec<_>>();
 
         Ok(Self {
-            rows: nrows,
-            columns: ncolumns,
-            tiles: grid,
-            mines: nmines,
+            rows,
+            columns,
+            tiles,
+            mines,
             flagged_cells: 0,
         })
     }
@@ -136,23 +136,29 @@ impl Board {
         ntiles == exposed_or_correctly_flagged
     }
 
-    pub(crate) fn expose(&mut self, (i, j): Coordinate) -> Result<bool, Error> {
-        if self.tile(i, j)?.mine {
-            self.tile_mut(i, j)?.exposed = true;
+    pub(crate) fn expose(&mut self, (r, c): Coordinate) -> Result<bool, Error> {
+        if self.tile(r, c)?.mine {
+            self.tile_mut(r, c)?.exposed = true;
             return Ok(true);
         }
 
         let mut seen = HashSet::new();
-        let mut coordinates = [(i, j)].iter().copied().collect::<VecDeque<_>>();
+        let mut coordinates = [(r, c)].iter().copied().collect::<VecDeque<_>>();
 
-        while let Some((x, y)) = coordinates.pop_front() {
-            if seen.insert((x, y)) {
-                let tile = self.tile_mut(x, y)?;
+        let columns = self.columns;
+
+        while let Some((r, c)) = coordinates.pop_front() {
+            if seen.insert((r, c)) {
+                let tile = self.tile_mut(r, c)?;
 
                 tile.exposed = !(tile.mine || tile.flagged);
 
                 if tile.adjacent_mines == 0 {
-                    coordinates.extend(tile.adjacent_tiles.iter());
+                    coordinates.extend(
+                        tile.adjacent_tiles
+                            .iter()
+                            .map(move |index| coord_from_index(index, columns)),
+                    );
                 }
             }
         }
@@ -163,7 +169,7 @@ impl Board {
     pub(crate) fn expose_all(&mut self) -> Result<(), Error> {
         let columns = self.columns;
         (0..self.tiles.len())
-            .map(move |i| coord_from_index(i, usize::from(columns)))
+            .map(move |i| coord_from_index(i, columns))
             .try_for_each(|coord| {
                 self.expose(coord)?;
                 Ok(())

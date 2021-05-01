@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1"
+bit-set = "0.5"
 ctrlc = "3"
 itertools = "0.10"
 rand = "0.8"
