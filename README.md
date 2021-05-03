@@ -7,7 +7,7 @@ A mine sweeping game written in Rust using `tui-rs`.
 Run with:
 
 ```
-$ docker run --rm -it cpcloud86/sweep:latest
+$ docker run --rm -it cpcloud86/minesweep:latest
 ```
 
 ![demo](./demo.gif)
