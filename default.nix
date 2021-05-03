@@ -30,14 +30,14 @@ import sources.nixpkgs {
       ];
     })
     (self: super: {
-      sweep = self.naersk.buildPackage {
+      minesweep = self.naersk.buildPackage {
         root = ./.;
       };
 
-      sweepImage = self.dockerTools.buildLayeredImage {
-        name = "sweep";
+      minesweepImage = self.dockerTools.buildLayeredImage {
+        name = "minesweep";
         config = {
-          Entrypoint = [ "${self.sweep}/bin/sweep" ];
+          Entrypoint = [ "${self.minesweep}/bin/minesweep" ];
         };
       };
     })
