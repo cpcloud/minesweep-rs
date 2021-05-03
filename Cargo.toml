@@ -7,7 +7,7 @@ edition = "2018"
 license-file = "./LICENSE"
 homepage = "https://github.com/cpcloud/sweep-rs"
 repository = "https://github.com/cpcloud/sweep-rs"
-keywords = ["terminal", "game", "games"]
+keywords = ["terminal", "minesweeper", "game"]
 readme = "./README.md"
 
 [dependencies]
