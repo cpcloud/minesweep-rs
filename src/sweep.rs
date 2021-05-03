@@ -126,15 +126,15 @@ impl Board {
         let correctly_flagged_mines = self
             .tiles
             .iter()
-            .map(|tile| u16::from(tile.flagged && tile.mine))
-            .sum::<u16>();
+            .map(|tile| u32::from(tile.flagged && tile.mine))
+            .sum::<u32>();
         let total_exposed = self
             .tiles
             .iter()
-            .map(|tile| u16::from(tile.exposed))
-            .sum::<u16>();
+            .map(|tile| u32::from(tile.exposed))
+            .sum::<u32>();
         let exposed_or_correctly_flagged = total_exposed + correctly_flagged_mines;
-        let ntiles = self.rows * self.columns;
+        let ntiles = u32::from(self.rows) * u32::from(self.columns);
         assert!(exposed_or_correctly_flagged <= ntiles);
         ntiles == exposed_or_correctly_flagged
     }
