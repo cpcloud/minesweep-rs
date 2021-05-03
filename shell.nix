@@ -2,7 +2,7 @@ let
   pkgs = import ./.;
 in
 pkgs.mkShell {
-  name = "sweep";
+  name = "minesweep";
   buildInputs = with pkgs; [
     cacert
     cargo-bloat
