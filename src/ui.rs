@@ -472,7 +472,7 @@ impl Ui {
                         let area = centered_rect(20, 3, final_mines_rect);
                         frame.render_widget(Clear, area); //this clears out the background
                         frame.render_widget(
-                            Paragraph::new(format!("You {}!", if lost { "lost" } else { "won" }))
+                            Paragraph::new(format!("You {}!", if lost { "lose" } else { "won" }))
                                 .block(
                                     Block::default()
                                         .borders(Borders::ALL)
