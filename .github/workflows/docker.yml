@@ -34,3 +34,11 @@ jobs:
           repository: cpcloud86/minesweep
           tag_with_ref: true
           tag_with_sha: true
+
+      - name: Sync GitHub README to Dockerhub
+        uses: ms-jpq/sync-dockerhub-readme@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: cpcloud86/minesweep
+          readme: "./README.md"
