@@ -1,12 +1,12 @@
 [package]
-name = "sweep"
+name = "minesweep"
 description = "A mine sweeping game written in Rust"
 version = "4.0.1"
 authors = ["Phillip Cloud"]
 edition = "2018"
 license-file = "./LICENSE"
-homepage = "https://github.com/cpcloud/sweep-rs"
-repository = "https://github.com/cpcloud/sweep-rs"
+homepage = "https://github.com/cpcloud/minesweep-rs"
+repository = "https://github.com/cpcloud/minesweep-rs"
 keywords = ["terminal", "minesweeper", "game"]
 readme = "./README.md"
 

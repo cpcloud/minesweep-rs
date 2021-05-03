@@ -1,4 +1,4 @@
-# `sweep-rs`
+# `minesweep-rs`
 
 A mine sweeping game written in Rust using `tui-rs`.
 
