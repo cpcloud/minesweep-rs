@@ -8,7 +8,7 @@ import sources.nixpkgs {
       naersk = self.callPackage sources.naersk { };
     })
     (self: super: {
-      inherit (self.rust-nightly.latest)
+      inherit (self.fenix.latest)
         rustc
         cargo
         clippy-preview
@@ -18,7 +18,7 @@ import sources.nixpkgs {
         rust-std
         rust-src;
 
-      rustToolchain = self.rust-nightly.latest.withComponents [
+      rustToolchain = self.fenix.latest.withComponents [
         "rustc"
         "cargo"
         "clippy-preview"
