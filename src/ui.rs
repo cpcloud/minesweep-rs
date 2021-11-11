@@ -369,7 +369,7 @@ impl Ui {
                     let help_text_block = List::new(
                         align_strings_to_char(
                             &[
-                                "movement: hjkl / 🠔 🠗 🠕 🠖",
+                                "movement: hjkl / ← ↓ ↑ →",
                                 "expose tile: spacebar",
                                 "flag tile: f",
                                 "quit: q",
