@@ -21,3 +21,6 @@ termion = "1"
 thiserror = "1"
 tui = "0.16"
 typed-builder = "0.9"
+
+[profile.release]
+lto = true
