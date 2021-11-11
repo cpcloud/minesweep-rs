@@ -8,6 +8,7 @@ name: Publish Docker Image
 
 jobs:
   publish-image:
+    concurrency: publish-image
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
