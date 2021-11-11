@@ -59,7 +59,7 @@
         pname = "minesweep";
         src = ./.;
 
-        nativeBuildInputs = with pkgs.llvmPackages_12; [ clang lld ];
+        nativeBuildInputs = with pkgs.llvmPackages_11; [ clang lld ];
 
         dontPatchELF = true;
 
