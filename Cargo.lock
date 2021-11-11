@@ -150,7 +150,7 @@ checksum = "18794a8ad5b29321f790b55d93dfba91e125cb1a9edbd4f8e3150acc771c1a5e"
 
 [[package]]
 name = "minesweep"
-version = "5.0.2-alpha.0"
+version = "5.0.3"
 dependencies = [
  "anyhow",
  "bit-set",
