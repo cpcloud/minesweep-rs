@@ -3,7 +3,7 @@ name = "minesweep"
 description = "A mine sweeping game written in Rust"
 version = "5.0.2-alpha.0"
 authors = ["Phillip Cloud"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 homepage = "https://github.com/cpcloud/minesweep-rs"
 repository = "https://github.com/cpcloud/minesweep-rs"
@@ -19,7 +19,7 @@ rand = "0.8"
 structopt = "0.3"
 termion = "1"
 thiserror = "1"
-tui = "0.15"
+tui = "0.16"
 typed-builder = "0.9"
 
 [package.metadata.release]
