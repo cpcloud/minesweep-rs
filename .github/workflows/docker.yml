@@ -25,10 +25,14 @@ jobs:
       - run: docker load -i "$(nix path-info -L '.#minesweep-image')"
       - run: docker images
       - run: echo "FROM minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" > Dockerfile
-      - uses: docker/build-push-action@v1
+      - uses: docker/login-action@v1
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: cpcloud86/minesweep
-          tag_with_ref: true
-          tag_with_sha: true
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - run: echo "::set-output name=tag::${GITHUB_REF#refs/*/}"
+        id: vars
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/minesweep:${{ steps.vars.outputs.tag }}
+          push: true
