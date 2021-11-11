@@ -1,7 +1,7 @@
 [package]
 name = "minesweep"
 description = "A mine sweeping game written in Rust"
-version ="5.0.4"
+version ="5.0.5"
 authors = ["Phillip Cloud"]
 edition = "2021"
 license = "Apache-2.0"
