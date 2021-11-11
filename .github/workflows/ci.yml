@@ -83,7 +83,6 @@ jobs:
         with:
           crate: semantic-release-rust
           version: 1.0.0-alpha.8
-      - run: semantic-release-rust --help
       - name: run semantic release
         uses: cycjimmy/semantic-release-action@v2
         if: ${{ github.event_name == 'push' }}
