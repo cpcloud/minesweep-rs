@@ -68,7 +68,6 @@ jobs:
           extraPullNames: nix-community
       - run: nix build -L '.#minesweep' '.#minesweep-image' --no-link
       - run: docker load -i "$(nix path-info -L '.#minesweep-image')"
-      - run: docker images
   release:
     concurrency: release
     needs:

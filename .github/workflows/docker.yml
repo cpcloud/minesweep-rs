@@ -24,7 +24,6 @@ jobs:
           extraPullNames: nix-community
       - run: nix build -L '.#minesweep-image' --no-link
       - run: docker load -i "$(nix path-info -L '.#minesweep-image')"
-      - run: docker images
       - run: echo "FROM minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" > Dockerfile
       - uses: docker/metadata-action@v3
         id: meta
