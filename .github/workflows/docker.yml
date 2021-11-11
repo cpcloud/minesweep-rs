@@ -1,33 +1,33 @@
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - master
   release:
-    types: [ "published" ]
+    types:
+      - published
 
 name: Publish Docker Image
 
 jobs:
-  push_to_registry:
-    name: Push Docker image to Dockerhub
+  publish-image:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v12
-
-      - name: Build the Docker image using Nix
-        run: nix build -L -f. minesweepImage --no-link
-
-      - name: Load the image into Docker
-        run: docker load -i "$(nix path-info -L -f. minesweepImage)"
-
-      - name: Create a temporary Dockerfile
-        run: echo "FROM minesweep:$(nix eval -f. --raw minesweepImage.imageTag)" > Dockerfile
-
-      - name: Push to Dockerhub
-        uses: docker/build-push-action@v1
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v12
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable-small
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v10
+        with:
+          name: minesweep
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community
+      - run: nix build -L '.#minesweep-image' --no-link
+      - run: docker load -i "$(nix path-info -L '.#minesweep-image')"
+      - run: docker images
+      - run: echo "FROM minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" > Dockerfile
+      - uses: docker/build-push-action@v1
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}

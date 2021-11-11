@@ -1,45 +1,10 @@
-let
-  sources = import ./nix/sources.nix;
-in
-import sources.nixpkgs {
-  overlays = [
-    (import sources.fenix)
-    (self: super: {
-      naersk = self.callPackage sources.naersk { };
-    })
-    (self: super: {
-      inherit (self.fenix.latest)
-        rustc
-        cargo
-        clippy-preview
-        rustfmt-preview
-        rust-analysis
-        rust-analyzer-preview
-        rust-std
-        rust-src;
-
-      rustToolchain = self.fenix.latest.withComponents [
-        "rustc"
-        "cargo"
-        "clippy-preview"
-        "rustfmt-preview"
-        "rust-analysis"
-        "rust-analyzer-preview"
-        "rust-std"
-        "rust-src"
-      ];
-    })
-    (self: super: {
-      minesweep = self.naersk.buildPackage {
-        root = ./.;
-      };
-
-      minesweepImage = self.dockerTools.buildLayeredImage {
-        name = "minesweep";
-        config = {
-          Entrypoint = [ "${self.minesweep}/bin/minesweep" ];
-        };
-      };
-    })
-  ];
-}
+(import
+  (
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/99f1c2157fba4bfe6211a321fd0ee43199025dbf.tar.gz";
+      sha256 = "0x2jn3vrawwv9xp15674wjz9pixwjyj3j771izayl962zziivbx2";
+    }
+  )
+  {
+    src = ./.;
+  }).defaultNix
