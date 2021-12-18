@@ -53,6 +53,12 @@
         rustc = rustToolchain;
       };
       inherit (pkgs.lib) mkForce;
+
+      prettierTOML = pkgs.writeShellScriptBin "prettier" ''
+        ${pkgs.nodePackages.prettier}/bin/prettier \
+        --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
+        "$@"
+      '';
     in
     rec {
       packages.minesweep = naersk-lib.buildPackage {
@@ -80,6 +86,7 @@
         name = "minesweep";
         config = {
           Entrypoint = [ "${packages.minesweep}/bin/minesweep" ];
+          Command = [ "${packages.minesweep}/bin/minesweep" ];
         };
       };
 
@@ -90,7 +97,6 @@
             nix-linter = {
               enable = true;
               entry = mkForce "${pkgs.nix-linter}/bin/nix-linter";
-              excludes = [ "nix/sources.nix" ];
             };
 
             nixpkgs-fmt = {
@@ -100,14 +106,13 @@
 
             shellcheck = {
               enable = true;
-              entry = mkForce "${pkgs.shellcheck}/bin/shellcheck";
+              entry = "${pkgs.shellcheck}/bin/shellcheck";
               files = "\\.sh$";
-              types_or = mkForce [ ];
             };
 
             shfmt = {
               enable = true;
-              entry = mkForce "${pkgs.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
+              entry = "${pkgs.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
               files = "\\.sh$";
             };
 
@@ -125,27 +130,29 @@
               enable = true;
               entry = mkForce "${rustToolchain}/bin/cargo check";
             };
-          };
 
+            prettier = {
+              enable = true;
+              entry = mkForce "${prettierTOML}/bin/prettier --check";
+              types_or = [ "json" "toml" "yaml" "markdown" ];
+            };
+          };
         };
       };
 
       devShell = pkgs.mkShell {
         nativeBuildInputs = (with pkgs; [
           cacert
-          cargo-bloat
           cargo-edit
           cargo-udeps
-          jq
-          util-linux
-          yj
           commitizen
+          git
         ]) ++ [
+          prettierTOML
           rustToolchain
         ];
-        shellHook = ''
-          ${self.checks.${system}.pre-commit-check.shellHook}
-        '';
+
+        shellHook = self.checks.${system}.pre-commit-check.shellHook;
       };
     });
 }
