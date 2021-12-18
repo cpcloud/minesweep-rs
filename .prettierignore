@@ -1,0 +1,6 @@
+.direnv
+.pre-commit-config.yaml
+Cargo.lock
+target
+result
+result-*
