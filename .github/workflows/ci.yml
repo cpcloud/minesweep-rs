@@ -57,6 +57,12 @@ jobs:
           set -euo pipefail
 
           docker load -i "$(nix path-info -L '.#minesweep-image')"
+
+      - name: show help
+        run: |
+          set -euo pipefail
+
+          docker run --rm -it "minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" --help
   release:
     concurrency: release
     needs:
