@@ -138,7 +138,7 @@ impl Board {
     }
 
     fn index_from_coord(&self, (r, c): Coordinate) -> usize {
-        usize::from(r * self.columns + c)
+        index_from_coord((r, c), self.columns)
     }
 
     pub(crate) fn expose(&mut self, (r, c): Coordinate) -> Result<bool, Error> {
