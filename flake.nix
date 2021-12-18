@@ -82,7 +82,7 @@
     in
     rec {
       packages.minesweep = pkgs.naerskBuild {
-        name = "minesweep";
+        pname = "minesweep";
         src = pkgs.gitignoreSource ./.;
 
         nativeBuildInputs = with pkgs; [ rustStdenv.cc rustLinker ];
