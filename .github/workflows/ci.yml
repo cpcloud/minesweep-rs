@@ -62,7 +62,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          docker run --rm -it "minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" --help
+          docker run --rm "minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" --help
   release:
     concurrency: release
     needs:
