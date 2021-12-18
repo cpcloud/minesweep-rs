@@ -81,11 +81,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: install semantic release
-        uses: actions-rs/install@v0.1.2
+      - name: get semantic-release-rust Cargo.lock
+        run: |
+          set -euo pipefail
+
+          mkdir -p /tmp/semantic-release-rust
+
+          gh api --paginate "repos/kettleby/semantic-release-rust/contents/Cargo.lock?ref=alpha" --jq '.content' | \
+            base64 -d > /tmp/semantic-release-rust/Cargo.lock
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get semantic-release-rust
+        uses: actions/cache@v2
         with:
-          crate: semantic-release-rust
-          version: 1.0.0-alpha.8
+          path: ~/.cargo
+          key: ${{ runner.os }}-${{ hashFiles('/tmp/semantic-release-rust/Cargo.lock') }}
 
       - uses: actions-rs/toolchain@v1
         with:
@@ -93,6 +104,12 @@ jobs:
           default: true
           override: true
           profile: minimal
+
+      - name: install semantic release
+        uses: actions-rs/install@v0.1.2
+        with:
+          crate: semantic-release-rust
+          version: 1.0.0-alpha.8
 
       - uses: cycjimmy/semantic-release-action@v2
         if: ${{ github.event_name == 'push' }}
