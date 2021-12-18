@@ -165,7 +165,7 @@ dependencies = [
 
 [[package]]
 name = "minesweep"
-version = "6.0.0"
+version = "6.0.1"
 dependencies = [
  "anyhow",
  "bit-set",
