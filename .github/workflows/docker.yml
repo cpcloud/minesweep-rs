@@ -22,11 +22,13 @@ jobs:
           name: minesweep
           extraPullNames: nix-community,naersk
       - run: nix build -L '.#minesweep-image' --no-link
-      - run: |
+      - name: load image
+        run: |
           set -euo pipefail
 
           docker load -i "$(nix path-info -L '.#minesweep-image')"
-      - run: |
+      - name: create Dockerfile
+        run: |
           set -euo pipefail
 
           echo "FROM minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" > Dockerfile
@@ -50,7 +52,7 @@ jobs:
       - uses: docker/login-action@v1
         with:
           registry: ghcr.io
-          username: x-access-token
+          username: phillip-ground
           password: ${{ steps.generate_token.outputs.token }}
       - uses: docker/build-push-action@v2
         with:
