@@ -170,7 +170,6 @@
           nix-linter
           nixpkgs-fmt
           prettierTOML
-          rust-analyzer-nightly
         ];
 
         shellHook = self.checks.${localSystem}.pre-commit-check.shellHook;
