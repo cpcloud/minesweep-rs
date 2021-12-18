@@ -79,7 +79,7 @@ jobs:
           title: "chore(flake/${{ matrix.input }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
           token: ${{ steps.generate_token.outputs.token }}
           body: ${{ steps.compare_commits.outputs.differences }}
-          labels: dependencies
+          labels: dependencies,autorebase:opt-in
 
       - name: Set the PR to automerge
         if: ${{ steps.create_pr.outputs.pull-request-operation == 'created' }}
