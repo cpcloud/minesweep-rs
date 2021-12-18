@@ -1,10 +1,7 @@
 use crate::error::Error;
 use bit_set::BitSet;
 use itertools::Itertools;
-use std::{
-    collections::{HashSet, VecDeque},
-    convert::TryFrom,
-};
+use std::{collections::VecDeque, convert::TryFrom};
 
 pub(crate) type Coordinate = (u16, u16);
 
@@ -57,10 +54,17 @@ fn adjacent((row, column): Coordinate, rows: u16, columns: u16) -> impl Iterator
 
 pub(crate) struct Board {
     tiles: Vec<Tile>,
+    // number of rows on the board
     pub(crate) rows: u16,
+    // number of columns on the board
     pub(crate) columns: u16,
+    // the total number of mines
     mines: u32,
     flagged_cells: u32,
+    // the total number of correctly flagged mines, allows checking a win in O(1)
+    correctly_flagged_mines: u32,
+    // the exposed tiles
+    seen: BitSet<u32>,
 }
 
 fn index_from_coord((r, c): Coordinate, columns: u16) -> usize {
@@ -114,7 +118,9 @@ impl Board {
             columns,
             tiles,
             mines,
-            flagged_cells: 0,
+            flagged_cells: Default::default(),
+            correctly_flagged_mines: Default::default(),
+            seen: Default::default(),
         })
     }
 
@@ -123,20 +129,16 @@ impl Board {
     }
 
     pub(crate) fn won(&self) -> bool {
-        let correctly_flagged_mines = self
-            .tiles
-            .iter()
-            .map(|tile| u32::from(tile.flagged && tile.mine))
-            .sum::<u32>();
-        let total_exposed = self
-            .tiles
-            .iter()
-            .map(|tile| u32::from(tile.exposed))
-            .sum::<u32>();
-        let exposed_or_correctly_flagged = total_exposed + correctly_flagged_mines;
+        let exposed_or_correctly_flagged = u32::try_from(self.seen.len())
+            .expect("unable to convert usize to u32 when calculating seen set length")
+            + self.correctly_flagged_mines;
         let ntiles = u32::from(self.rows) * u32::from(self.columns);
         assert!(exposed_or_correctly_flagged <= ntiles);
         ntiles == exposed_or_correctly_flagged
+    }
+
+    fn index_from_coord(&self, (r, c): Coordinate) -> usize {
+        usize::from(r * self.columns + c)
     }
 
     pub(crate) fn expose(&mut self, (r, c): Coordinate) -> Result<bool, Error> {
@@ -145,13 +147,12 @@ impl Board {
             return Ok(true);
         }
 
-        let mut seen = HashSet::new();
         let mut coordinates = [(r, c)].iter().copied().collect::<VecDeque<_>>();
 
         let columns = self.columns;
 
         while let Some((r, c)) = coordinates.pop_front() {
-            if seen.insert((r, c)) {
+            if self.seen.insert(self.index_from_coord((r, c))) {
                 let tile = self.tile_mut(r, c)?;
 
                 tile.exposed = !(tile.mine || tile.flagged);
@@ -163,7 +164,7 @@ impl Board {
                             .map(move |index| coord_from_index(index, columns)),
                     );
                 }
-            }
+            };
         }
 
         Ok(false)
@@ -181,21 +182,22 @@ impl Board {
 
     pub(crate) fn tile(&self, i: u16, j: u16) -> Result<&Tile, Error> {
         self.tiles
-            .get(index_from_coord((i, j), self.columns))
+            .get(self.index_from_coord((i, j)))
             .ok_or(Error::GetTile(i, j))
     }
 
     pub(crate) fn tile_mut(&mut self, i: u16, j: u16) -> Result<&mut Tile, Error> {
-        self.tiles
-            .get_mut(index_from_coord((i, j), self.columns))
-            .ok_or(Error::GetTile(i, j))
+        let index = self.index_from_coord((i, j));
+        self.tiles.get_mut(index).ok_or(Error::GetTile(i, j))
     }
 
     pub(crate) fn flag(&mut self, i: u16, j: u16) -> Result<bool, Error> {
         let nflagged = self.flagged_cells;
-        let was_flagged = self.tile(i, j)?.flagged;
+        let tile = self.tile(i, j)?;
+        let was_flagged = tile.flagged;
         let flagged = !was_flagged;
         let nmines = self.mines;
+        self.correctly_flagged_mines += u32::from(flagged && tile.mine);
         if was_flagged {
             self.flagged_cells = self.flagged_cells.saturating_sub(1);
             self.tile_mut(i, j)?.flagged = flagged;
