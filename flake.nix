@@ -143,6 +143,7 @@
       devShell = pkgs.mkShell {
         nativeBuildInputs = (with pkgs; [
           cacert
+          cargo-bloat
           cargo-edit
           cargo-udeps
           commitizen
