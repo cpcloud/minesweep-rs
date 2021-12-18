@@ -23,56 +23,73 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
+
+    gitignore = {
+      url = "github:hercules-ci/gitignore.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     { self
-    , nixpkgs
-    , flake-utils
-    , pre-commit-hooks
-    , naersk
     , fenix
+    , flake-utils
+    , gitignore
+    , naersk
+    , nixpkgs
+    , pre-commit-hooks
     }:
-    flake-utils.lib.eachDefaultSystem (system:
+    flake-utils.lib.eachDefaultSystem (localSystem:
     let
-      target = "x86_64-unknown-linux-musl";
-      pkgs = nixpkgs.legacyPackages.${system};
-      rustToolchain = with fenix.packages.${system}; combine [
-        latest.clippy-preview
-        latest.rust-analysis
-        latest.rust-analyzer-preview
-        latest.rust-src
-        latest.rust-std
-        latest.rustfmt-preview
-        minimal.cargo
-        minimal.rustc
-        targets.${target}.latest.rust-std
-      ];
-      naersk-lib = naersk.lib.${system}.override {
-        cargo = rustToolchain;
-        rustc = rustToolchain;
+      crossSystem = nixpkgs.lib.systems.examples.musl64 // { useLLVM = true; };
+      pkgs = import nixpkgs {
+        inherit localSystem crossSystem;
+        overlays = [
+          fenix.overlay
+          gitignore.overlay
+          naersk.overlay
+          (final: prev: {
+            rustToolchain = final.fenix.combine [
+              fenix.packages.${localSystem}.latest.clippy-preview
+              fenix.packages.${localSystem}.latest.rust-analysis
+              fenix.packages.${localSystem}.latest.rust-analyzer-preview
+              fenix.packages.${localSystem}.latest.rust-src
+              fenix.packages.${localSystem}.latest.rust-std
+              fenix.packages.${localSystem}.latest.rustfmt-preview
+              fenix.packages.${localSystem}.minimal.cargo
+              fenix.packages.${localSystem}.minimal.rustc
+              final.fenix.targets.${crossSystem.config}.latest.rust-std
+            ];
+
+            rustStdenv = final.pkgsBuildHost.llvmPackages_13.stdenv;
+            rustLinker = final.pkgsBuildHost.llvmPackages_13.lld;
+
+            naerskBuild = (prev.pkgsBuildHost.naersk.override {
+              cargo = final.rustToolchain;
+              rustc = final.rustToolchain;
+              stdenv = final.rustStdenv;
+            }).buildPackage;
+
+            prettierTOML = final.pkgsBuildHost.writeShellScriptBin "prettier" ''
+              ${final.pkgsBuildHost.nodePackages.prettier}/bin/prettier \
+              --plugin-search-dir "${final.pkgsBuildHost.nodePackages.prettier-plugin-toml}/lib" \
+              "$@"
+            '';
+          })
+        ];
       };
       inherit (pkgs.lib) mkForce;
-
-      prettierTOML = pkgs.writeShellScriptBin "prettier" ''
-        ${pkgs.nodePackages.prettier}/bin/prettier \
-        --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" \
-        "$@"
-      '';
     in
     rec {
-      packages.minesweep = naersk-lib.buildPackage {
-        pname = "minesweep";
-        src = ./.;
+      packages.minesweep = pkgs.naerskBuild {
+        name = "minesweep";
+        src = pkgs.gitignoreSource ./.;
 
-        nativeBuildInputs = with pkgs.llvmPackages_11; [ clang lld ];
+        nativeBuildInputs = with pkgs; [ rustStdenv.cc rustLinker ];
 
-        dontPatchELF = true;
+        CARGO_BUILD_TARGET = crossSystem.config;
 
-        CARGO_BUILD_TARGET = target;
-        CARGO_BUILD_RUSTFLAGS = "-C linker-flavor=ld.lld -C target-feature=+crt-static";
-
-        doCheck = true;
+        RUSTFLAGS = "-C linker-flavor=ld.lld -C target-feature=+crt-static";
       };
 
       defaultPackage = packages.minesweep;
@@ -82,7 +99,7 @@
       };
       defaultApp = apps.minesweep;
 
-      packages.minesweep-image = pkgs.dockerTools.buildLayeredImage {
+      packages.minesweep-image = pkgs.pkgsBuildBuild.dockerTools.buildLayeredImage {
         name = "minesweep";
         config = {
           Entrypoint = [ "${packages.minesweep}/bin/minesweep" ];
@@ -91,49 +108,49 @@
       };
 
       checks = {
-        pre-commit-check = pre-commit-hooks.lib.${system}.run {
+        pre-commit-check = pre-commit-hooks.lib.${localSystem}.run {
           src = ./.;
           hooks = {
             nix-linter = {
               enable = true;
-              entry = mkForce "${pkgs.nix-linter}/bin/nix-linter";
+              entry = mkForce "${pkgs.pkgsBuildBuild.nix-linter}/bin/nix-linter";
             };
 
             nixpkgs-fmt = {
               enable = true;
-              entry = mkForce "${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check";
+              entry = mkForce "${pkgs.pkgsBuildBuild.nixpkgs-fmt}/bin/nixpkgs-fmt --check";
             };
 
             shellcheck = {
               enable = true;
-              entry = "${pkgs.shellcheck}/bin/shellcheck";
+              entry = "${pkgs.pkgsBuildBuild.shellcheck}/bin/shellcheck";
               files = "\\.sh$";
             };
 
             shfmt = {
               enable = true;
-              entry = "${pkgs.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
+              entry = "${pkgs.pkgsBuildBuild.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
               files = "\\.sh$";
             };
 
             rustfmt = {
               enable = true;
-              entry = mkForce "${rustToolchain}/bin/cargo fmt -- --check --color=always";
+              entry = mkForce "${pkgs.pkgsBuildBuild.rustToolchain}/bin/cargo fmt -- --check --color=always";
             };
 
             clippy = {
               enable = true;
-              entry = mkForce "${rustToolchain}/bin/cargo clippy";
+              entry = mkForce "${pkgs.pkgsBuildBuild.rustToolchain}/bin/cargo clippy";
             };
 
             cargo-check = {
               enable = true;
-              entry = mkForce "${rustToolchain}/bin/cargo check";
+              entry = mkForce "${pkgs.pkgsBuildBuild.rustToolchain}/bin/cargo check";
             };
 
             prettier = {
               enable = true;
-              entry = mkForce "${prettierTOML}/bin/prettier --check";
+              entry = mkForce "${pkgs.prettierTOML}/bin/prettier --check";
               types_or = [ "json" "toml" "yaml" "markdown" ];
             };
           };
@@ -141,19 +158,22 @@
       };
 
       devShell = pkgs.mkShell {
-        nativeBuildInputs = (with pkgs; [
+        inputsFrom = [ self.defaultPackage.${localSystem} ];
+        nativeBuildInputs = with pkgs.pkgsBuildBuild; [
           cacert
           cargo-bloat
           cargo-edit
           cargo-udeps
           commitizen
+          file
           git
-        ]) ++ [
+          nix-linter
+          nixpkgs-fmt
           prettierTOML
-          rustToolchain
+          rust-analyzer-nightly
         ];
 
-        shellHook = self.checks.${system}.pre-commit-check.shellHook;
+        shellHook = self.checks.${localSystem}.pre-commit-check.shellHook;
       };
     });
 }
