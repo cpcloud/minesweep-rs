@@ -99,12 +99,8 @@ struct Cell<'app> {
 }
 
 impl<'app> Cell<'app> {
-    fn new(app: &'app App, r: u16, c: u16) -> Self {
-        Self {
-            app,
-            row: r,
-            column: c,
-        }
+    fn new(app: &'app App, row: u16, column: u16) -> Self {
+        Self { app, row, column }
     }
 
     fn is_active(&self) -> bool {
@@ -208,9 +204,7 @@ impl App {
     }
 
     fn down(&mut self) {
-        if self.active_row < self.board.rows - 1 {
-            self.active_row += 1;
-        }
+        self.active_row += u16::from(self.active_row < self.board.rows - 1);
     }
 
     fn left(&mut self) {
@@ -220,9 +214,7 @@ impl App {
     }
 
     fn right(&mut self) {
-        if self.active_column < self.board.columns - 1 {
-            self.active_column += 1;
-        }
+        self.active_column += u16::from(self.active_column < self.board.columns - 1);
     }
 
     fn cell(&self, (r, c): Coordinate) -> Cell {
