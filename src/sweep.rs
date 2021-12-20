@@ -146,7 +146,7 @@ impl Board {
                 tile.exposed = !(tile.mine || tile.flagged);
 
                 if tile.adjacent_mines == 0 {
-                    coordinates.extend(tile.adjacent_tiles.iter());
+                    coordinates.extend(&tile.adjacent_tiles);
                 }
             };
         }
