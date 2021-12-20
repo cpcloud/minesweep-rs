@@ -1,6 +1,5 @@
 use crate::error::Error;
 use bit_set::BitSet;
-use itertools::Itertools;
 use std::{collections::VecDeque, convert::TryFrom};
 
 pub(crate) type Coordinate = (u16, u16);
@@ -37,7 +36,7 @@ fn adjacent((row, column): Coordinate, rows: u16, columns: u16) -> impl Iterator
     INCREMENTS
         .iter()
         .copied()
-        .cartesian_product(INCREMENTS.iter().copied())
+        .flat_map(|row_incr| std::iter::repeat(row_incr).zip(INCREMENTS.iter().copied()))
         .filter_map(move |(row_incr, column_incr)| {
             let row_offset = row_incr.offset(row);
             let column_offset = column_incr.offset(column);
@@ -55,14 +54,14 @@ fn adjacent((row, column): Coordinate, rows: u16, columns: u16) -> impl Iterator
 pub(crate) struct Board {
     tiles: Vec<Tile>,
     // number of rows on the board
-    pub(crate) rows: u16,
+    pub(crate) rows: usize,
     // number of columns on the board
-    pub(crate) columns: u16,
+    pub(crate) columns: usize,
     // the total number of mines
-    mines: u32,
-    flagged_cells: u32,
+    mines: usize,
+    flagged_cells: usize,
     // the total number of correctly flagged mines, allows checking a win in O(1)
-    correctly_flagged_mines: u32,
+    correctly_flagged_mines: usize,
     // the exposed tiles
     seen: BitSet<u32>,
 }
@@ -71,27 +70,16 @@ fn index_from_coord((r, c): Coordinate, columns: u16) -> usize {
     usize::from(r * columns + c)
 }
 
-fn coord_from_index(index: usize, columns: u16) -> Coordinate {
-    let columns = usize::from(columns);
-    (
-        u16::try_from(index / columns).unwrap(),
-        u16::try_from(index % columns).unwrap(),
-    )
-}
-
 impl Board {
-    pub(crate) fn new(rows: u16, columns: u16, mines: u32) -> Result<Self, Error> {
+    pub(crate) fn new(rows: u16, columns: u16, mines: usize) -> Result<Self, Error> {
         let mut rng = rand::thread_rng();
-        let samples = rand::seq::index::sample(
-            &mut rng,
-            usize::from(rows) * usize::from(columns),
-            usize::try_from(mines).map_err(Error::ConvertU32ToUsize)?,
-        )
-        .into_iter()
-        .collect::<BitSet>();
+        let samples =
+            rand::seq::index::sample(&mut rng, usize::from(rows) * usize::from(columns), mines)
+                .into_iter()
+                .collect::<BitSet>();
 
         let tiles = (0..rows)
-            .cartesian_product(0..columns)
+            .flat_map(|row| std::iter::repeat(row).zip(0..columns))
             .enumerate()
             .map(|(i, point)| {
                 // compute the tiles adjacent to the one being constructed
@@ -114,8 +102,8 @@ impl Board {
             .collect::<Vec<_>>();
 
         Ok(Self {
-            rows,
-            columns,
+            rows: usize::from(rows),
+            columns: usize::from(columns),
             tiles,
             mines,
             flagged_cells: Default::default(),
@@ -124,45 +112,41 @@ impl Board {
         })
     }
 
-    pub(crate) fn available_flags(&self) -> u32 {
+    pub(crate) fn available_flags(&self) -> usize {
         self.mines - self.flagged_cells
     }
 
     pub(crate) fn won(&self) -> bool {
-        let exposed_or_correctly_flagged = u32::try_from(self.seen.len())
-            .expect("unable to convert usize to u32 when calculating seen set length")
-            + self.correctly_flagged_mines;
-        let ntiles = u32::from(self.rows) * u32::from(self.columns);
+        let exposed_or_correctly_flagged = self.seen.len() + self.correctly_flagged_mines;
+        let ntiles = self.rows * self.columns;
         assert!(exposed_or_correctly_flagged <= ntiles);
         ntiles == exposed_or_correctly_flagged
     }
 
-    fn index_from_coord(&self, (r, c): Coordinate) -> usize {
-        index_from_coord((r, c), self.columns)
+    pub(crate) fn coord_from_index(&self, index: usize) -> Coordinate {
+        let columns = self.columns;
+        (
+            u16::try_from(index / columns).unwrap(),
+            u16::try_from(index % columns).unwrap(),
+        )
     }
 
-    pub(crate) fn expose(&mut self, (r, c): Coordinate) -> Result<bool, Error> {
-        if self.tile(r, c)?.mine {
-            self.tile_mut(r, c)?.exposed = true;
+    pub(crate) fn expose(&mut self, index: usize) -> Result<bool, Error> {
+        if self.tile(index)?.mine {
+            self.tile_mut(index)?.exposed = true;
             return Ok(true);
         }
 
-        let mut coordinates = [(r, c)].iter().copied().collect::<VecDeque<_>>();
+        let mut coordinates = [index].iter().copied().collect::<VecDeque<_>>();
 
-        let columns = self.columns;
-
-        while let Some((r, c)) = coordinates.pop_front() {
-            if self.seen.insert(self.index_from_coord((r, c))) {
-                let tile = self.tile_mut(r, c)?;
+        while let Some(index) = coordinates.pop_front() {
+            if self.seen.insert(index) {
+                let tile = self.tile_mut(index)?;
 
                 tile.exposed = !(tile.mine || tile.flagged);
 
                 if tile.adjacent_mines == 0 {
-                    coordinates.extend(
-                        tile.adjacent_tiles
-                            .iter()
-                            .map(move |index| coord_from_index(index, columns)),
-                    );
+                    coordinates.extend(tile.adjacent_tiles.iter());
                 }
             };
         }
@@ -171,38 +155,35 @@ impl Board {
     }
 
     pub(crate) fn expose_all(&mut self) -> Result<(), Error> {
-        let columns = self.columns;
-        (0..self.tiles.len())
-            .map(move |i| coord_from_index(i, columns))
-            .try_for_each(|coord| {
-                self.expose(coord)?;
-                Ok(())
-            })
+        (0..self.tiles.len()).try_for_each(|index| {
+            self.expose(index)?;
+            Ok(())
+        })
     }
 
-    pub(crate) fn tile(&self, i: u16, j: u16) -> Result<&Tile, Error> {
+    pub(crate) fn tile(&self, index: usize) -> Result<&Tile, Error> {
         self.tiles
-            .get(self.index_from_coord((i, j)))
-            .ok_or(Error::GetTile(i, j))
+            .get(index)
+            .ok_or_else(|| Error::GetTile(self.coord_from_index(index)))
     }
 
-    pub(crate) fn tile_mut(&mut self, i: u16, j: u16) -> Result<&mut Tile, Error> {
-        let index = self.index_from_coord((i, j));
-        self.tiles.get_mut(index).ok_or(Error::GetTile(i, j))
+    pub(crate) fn tile_mut(&mut self, index: usize) -> Result<&mut Tile, Error> {
+        let coord = self.coord_from_index(index);
+        self.tiles.get_mut(index).ok_or(Error::GetTile(coord))
     }
 
-    pub(crate) fn flag(&mut self, i: u16, j: u16) -> Result<bool, Error> {
+    pub(crate) fn flag(&mut self, index: usize) -> Result<bool, Error> {
         let nflagged = self.flagged_cells;
-        let tile = self.tile(i, j)?;
+        let tile = self.tile(index)?;
         let was_flagged = tile.flagged;
         let flagged = !was_flagged;
         let nmines = self.mines;
-        self.correctly_flagged_mines += u32::from(flagged && tile.mine);
+        self.correctly_flagged_mines += usize::from(flagged && tile.mine);
         if was_flagged {
             self.flagged_cells = self.flagged_cells.saturating_sub(1);
-            self.tile_mut(i, j)?.flagged = flagged;
-        } else if nflagged < nmines && !self.tile(i, j)?.exposed {
-            self.tile_mut(i, j)?.flagged = flagged;
+            self.tile_mut(index)?.flagged = flagged;
+        } else if nflagged < nmines && !self.tile(index)?.exposed {
+            self.tile_mut(index)?.flagged = flagged;
             self.flagged_cells += 1;
         }
         Ok(flagged)

@@ -102,8 +102,8 @@
       packages.minesweep-image = pkgs.pkgsBuildBuild.dockerTools.buildLayeredImage {
         name = "minesweep";
         config = {
-          Entrypoint = [ "${packages.minesweep}/bin/minesweep" ];
-          Command = [ "${packages.minesweep}/bin/minesweep" ];
+          Entrypoint = [ defaultApp.program ];
+          Command = [ defaultApp.program ];
         };
       };
 

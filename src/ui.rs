@@ -1,8 +1,9 @@
 use crate::{
     error::Error,
     events::{Event, Events},
-    sweep::{Board, Coordinate},
+    sweep::Board,
 };
+use num_traits::ToPrimitive;
 use std::{
     convert::TryFrom,
     fmt, io,
@@ -88,35 +89,33 @@ const FLAG: &str = "⛳";
 
 struct App {
     board: Board,
-    active_column: u16,
-    active_row: u16,
+    active_index: usize,
 }
 
 struct Cell<'app> {
     app: &'app App,
-    row: u16,
-    column: u16,
+    index: usize,
 }
 
 impl<'app> Cell<'app> {
-    fn new(app: &'app App, row: u16, column: u16) -> Self {
-        Self { app, row, column }
+    fn new(app: &'app App, index: usize) -> Self {
+        Self { app, index }
     }
 
     fn is_active(&self) -> bool {
-        self.app.active() == (self.row, self.column)
+        self.app.active() == self.index
     }
 
     fn is_exposed(&self) -> bool {
-        self.app.board.tile(self.row, self.column).unwrap().exposed
+        self.app.board.tile(self.index).unwrap().exposed
     }
 
     fn is_flagged(&self) -> bool {
-        self.app.board.tile(self.row, self.column).unwrap().flagged
+        self.app.board.tile(self.index).unwrap().flagged
     }
 
     fn is_mine(&self) -> bool {
-        self.app.board.tile(self.row, self.column).unwrap().mine
+        self.app.board.tile(self.index).unwrap().mine
     }
 
     fn block(&self, lost: bool) -> Block {
@@ -170,12 +169,7 @@ impl fmt::Display for Cell<'_> {
             } else if self.is_mine() && self.is_exposed() {
                 BOMB.to_owned()
             } else if self.is_exposed() {
-                let num_adjacent_mines = self
-                    .app
-                    .board
-                    .tile(self.row, self.column)
-                    .unwrap()
-                    .adjacent_mines;
+                let num_adjacent_mines = self.app.board.tile(self.index).unwrap().adjacent_mines;
                 if num_adjacent_mines == 0 {
                     " ".to_owned()
                 } else {
@@ -192,41 +186,45 @@ impl App {
     fn new(board: Board) -> Self {
         Self {
             board,
-            active_column: 0,
-            active_row: 0,
+            active_index: 0,
         }
     }
 
     fn up(&mut self) {
-        if let Some(active_row) = self.active_row.checked_sub(1) {
-            self.active_row = active_row;
+        if let Some(active_index) = self.active_index.checked_sub(self.board.columns) {
+            self.active_index = active_index;
         }
     }
 
     fn down(&mut self) {
-        self.active_row += u16::from(self.active_row < self.board.rows - 1);
+        let nrows = self.board.rows;
+        self.active_index +=
+            self.board.columns * usize::from(self.active_index / nrows < nrows - 1);
     }
 
     fn left(&mut self) {
-        if let Some(active_column) = self.active_column.checked_sub(1) {
-            self.active_column = active_column;
-        }
+        self.active_index -= usize::from(
+            (self.active_index % self.board.columns)
+                .checked_sub(1)
+                .is_some(),
+        );
     }
 
     fn right(&mut self) {
-        self.active_column += u16::from(self.active_column < self.board.columns - 1);
+        let ncolumns = self.board.columns;
+        self.active_index += usize::from(self.active_index % ncolumns < ncolumns - 1);
     }
 
-    fn cell(&self, (r, c): Coordinate) -> Cell {
-        Cell::new(self, r, c)
+    fn cell(&self, index: usize) -> Cell {
+        Cell::new(self, index)
     }
 
     fn active_cell(&self) -> Cell {
         self.cell(self.active())
     }
 
-    fn active(&self) -> Coordinate {
-        (self.active_row, self.active_column)
+    fn active(&self) -> usize {
+        self.active_index
     }
 
     fn expose_active_cell(&mut self) -> Result<bool, Error> {
@@ -242,8 +240,7 @@ impl App {
     }
 
     fn flag_active_cell(&mut self) -> Result<(), Error> {
-        let (r, c) = self.active();
-        self.board.flag(r, c)?;
+        self.board.flag(self.active())?;
         Ok(())
     }
 }
@@ -279,7 +276,11 @@ impl Ui {
             .take(columns.into())
             .collect::<Vec<_>>();
 
-        let mut app = App::new(Board::new(rows, columns, mines)?);
+        let mut app = App::new(Board::new(
+            rows,
+            columns,
+            usize::try_from(mines).map_err(Error::ConvertU32ToUsize)?,
+        )?);
         let mut lost = false;
 
         let stdout = io::stdout()
@@ -316,6 +317,7 @@ impl Ui {
                     let mines_rect = outer_rects[0];
 
                     let available_flags = app.board.available_flags();
+
                     let info_text = Gauge::default()
                         .block(
                             Block::default().borders(Borders::ALL).title(Span::styled(
@@ -334,9 +336,16 @@ impl Ui {
                         .label(format!(
                             "{:>length$}",
                             available_flags,
-                            length = f64::from(available_flags).log10().ceil() as usize + 1
+                            length = (available_flags)
+                                .to_f64()
+                                .unwrap()
+                                .log10()
+                                .ceil()
+                                .to_usize()
+                                .unwrap()
+                                + 1
                         ))
-                        .ratio(f64::from(available_flags) / f64::from(mines));
+                        .ratio(available_flags.to_f64().unwrap() / f64::from(mines));
 
                     let horizontal_pad_block_width = (terminal_rect.width - grid_width) / 2;
                     let mines_rects = Layout::default()
@@ -416,7 +425,8 @@ impl Ui {
                         .constraints(row_constraints.clone())
                         .split(final_mines_rect);
 
-                    for (r, row_rect) in row_rects.into_iter().enumerate() {
+                    let mut index = 0_usize;
+                    for row_rect in row_rects.into_iter() {
                         let col_rects = Layout::default()
                             .direction(Direction::Horizontal)
                             .vertical_margin(0)
@@ -424,11 +434,8 @@ impl Ui {
                             .constraints(col_constraints.clone())
                             .split(row_rect);
 
-                        let r = u16::try_from(r).unwrap();
-
-                        for (c, cell_rect) in col_rects.into_iter().enumerate() {
-                            let c = u16::try_from(c).unwrap();
-                            let cell = app.cell((r, c));
+                        for cell_rect in col_rects.into_iter() {
+                            let cell = app.cell(index);
                             let single_row_text = format!(
                                 "{:^length$}",
                                 cell.to_string(),
@@ -456,6 +463,7 @@ impl Ui {
                                 .block(cell.block(lost))
                                 .style(cell.text_style());
                             frame.render_widget(cell_text, cell_rect);
+                            index += 1;
                         }
                     }
 
