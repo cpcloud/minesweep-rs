@@ -1,6 +1,5 @@
 use crate::error::Error;
 use bit_set::BitSet;
-use itertools::Itertools;
 use std::{collections::VecDeque, convert::TryFrom};
 
 pub(crate) type Coordinate = (u16, u16);
@@ -37,7 +36,7 @@ fn adjacent((row, column): Coordinate, rows: u16, columns: u16) -> impl Iterator
     INCREMENTS
         .iter()
         .copied()
-        .cartesian_product(INCREMENTS.iter().copied())
+        .flat_map(|row_incr| std::iter::repeat(row_incr).zip(INCREMENTS))
         .filter_map(move |(row_incr, column_incr)| {
             let row_offset = row_incr.offset(row);
             let column_offset = column_incr.offset(column);
@@ -91,7 +90,7 @@ impl Board {
         .collect::<BitSet>();
 
         let tiles = (0..rows)
-            .cartesian_product(0..columns)
+            .flat_map(|row| std::iter::repeat(row).zip(0..columns))
             .enumerate()
             .map(|(i, point)| {
                 // compute the tiles adjacent to the one being constructed
