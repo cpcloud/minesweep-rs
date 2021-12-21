@@ -3,8 +3,8 @@ use crate::{
     events::{Event, Events},
     sweep::{Board, Coordinate},
 };
+use num_traits::ToPrimitive;
 use std::{
-    convert::TryFrom,
     fmt, io,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -76,11 +76,11 @@ fn align_strings_to_char(strings: &[&str], c: char) -> Vec<String> {
 
 #[derive(typed_builder::TypedBuilder)]
 pub(crate) struct Ui {
-    rows: u16,
-    columns: u16,
-    mines: u32,
-    cell_width: u16,
-    cell_height: u16,
+    rows: usize,
+    columns: usize,
+    mines: usize,
+    cell_width: usize,
+    cell_height: usize,
 }
 
 const BOMB: &str = "💣";
@@ -88,18 +88,18 @@ const FLAG: &str = "⛳";
 
 struct App {
     board: Board,
-    active_column: u16,
-    active_row: u16,
+    active_column: usize,
+    active_row: usize,
 }
 
 struct Cell<'app> {
     app: &'app App,
-    row: u16,
-    column: u16,
+    row: usize,
+    column: usize,
 }
 
 impl<'app> Cell<'app> {
-    fn new(app: &'app App, row: u16, column: u16) -> Self {
+    fn new(app: &'app App, row: usize, column: usize) -> Self {
         Self { app, row, column }
     }
 
@@ -204,7 +204,7 @@ impl App {
     }
 
     fn down(&mut self) {
-        self.active_row += u16::from(self.active_row < self.board.rows - 1);
+        self.active_row += usize::from(self.active_row < self.board.rows - 1);
     }
 
     fn left(&mut self) {
@@ -214,7 +214,7 @@ impl App {
     }
 
     fn right(&mut self) {
-        self.active_column += u16::from(self.active_column < self.board.columns - 1);
+        self.active_column += usize::from(self.active_column < self.board.columns - 1);
     }
 
     fn cell(&self, (r, c): Coordinate) -> Cell {
@@ -268,16 +268,22 @@ impl Ui {
 
         let padding = 1;
 
-        let grid_width = cell_width * columns + 2 * padding;
-        let grid_height = cell_height * rows + 2 * padding;
+        let grid_width =
+            u16::try_from(cell_width * columns + 2 * padding).map_err(Error::ConvertUsizeToU16)?;
+        let grid_height =
+            u16::try_from(cell_height * rows + 2 * padding).map_err(Error::ConvertUsizeToU16)?;
 
-        let row_constraints = std::iter::repeat(Constraint::Length(cell_height))
-            .take(rows.into())
-            .collect::<Vec<_>>();
+        let row_constraints = std::iter::repeat(Constraint::Length(
+            u16::try_from(cell_height).map_err(Error::ConvertUsizeToU16)?,
+        ))
+        .take(rows.into())
+        .collect::<Vec<_>>();
 
-        let col_constraints = std::iter::repeat(Constraint::Length(cell_width))
-            .take(columns.into())
-            .collect::<Vec<_>>();
+        let col_constraints = std::iter::repeat(Constraint::Length(
+            u16::try_from(cell_width).map_err(Error::ConvertUsizeToU16)?,
+        ))
+        .take(columns.into())
+        .collect::<Vec<_>>();
 
         let mut app = App::new(Board::new(rows, columns, mines)?);
         let mut lost = false;
@@ -334,9 +340,16 @@ impl Ui {
                         .label(format!(
                             "{:>length$}",
                             available_flags,
-                            length = f64::from(available_flags).log10().ceil() as usize + 1
+                            length = available_flags
+                                .to_f64()
+                                .unwrap()
+                                .log10()
+                                .ceil()
+                                .to_usize()
+                                .unwrap()
+                                + 1
                         ))
-                        .ratio(f64::from(available_flags) / f64::from(mines));
+                        .ratio(available_flags.to_f64().unwrap() / mines.to_f64().unwrap());
 
                     let horizontal_pad_block_width = (terminal_rect.width - grid_width) / 2;
                     let mines_rects = Layout::default()
@@ -424,10 +437,7 @@ impl Ui {
                             .constraints(col_constraints.clone())
                             .split(row_rect);
 
-                        let r = u16::try_from(r).unwrap();
-
                         for (c, cell_rect) in col_rects.into_iter().enumerate() {
-                            let c = u16::try_from(c).unwrap();
                             let cell = app.cell((r, c));
                             let single_row_text = format!(
                                 "{:^length$}",

@@ -155,6 +155,7 @@ dependencies = [
  "anyhow",
  "bit-set",
  "ctrlc",
+ "num-traits",
  "rand",
  "structopt",
  "termion",
@@ -174,6 +175,15 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
+]
+
+[[package]]
+name = "num-traits"
+version = "0.2.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
+dependencies = [
+ "autocfg",
 ]
 
 [[package]]
