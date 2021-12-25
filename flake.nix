@@ -140,7 +140,7 @@
 
             clippy = {
               enable = true;
-              entry = mkForce "${pkgs.pkgsBuildBuild.rustToolchain}/bin/cargo clippy";
+              entry = mkForce "${pkgs.pkgsBuildBuild.rustToolchain}/bin/cargo clippy -- -D warnings";
             };
 
             cargo-check = {
@@ -150,7 +150,7 @@
 
             prettier = {
               enable = true;
-              entry = mkForce "${pkgs.prettierTOML}/bin/prettier --check";
+              entry = mkForce "${pkgs.pkgsBuildBuild.prettierTOML}/bin/prettier --check";
               types_or = [ "json" "toml" "yaml" "markdown" ];
             };
           };
