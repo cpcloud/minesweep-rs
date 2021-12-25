@@ -34,13 +34,7 @@ jobs:
 
       - run: nix shell -L -f '<nixpkgs>' commitlint -c commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.sha }} --verbose
   nix:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os:
-          - ubuntu-latest
-          - macos-10.15
-          - macos-11
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
@@ -54,18 +48,14 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,naersk
 
-      - run: nix build -L '.#minesweep' --no-link
-
       - name: build image
-        run: nix build -L '.#minesweep-image' --no-link
-        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: nix build --keep-going --print-build-logs '.#minesweep-image' --no-link
 
       - name: load image
-        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
           set -euo pipefail
 
-          docker load -i "$(nix path-info -L '.#minesweep-image')"
+          docker load -i "$(nix path-info --print-build-logs '.#minesweep-image')"
       - name: show help
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
