@@ -276,13 +276,13 @@ impl Ui {
         let row_constraints = std::iter::repeat(Constraint::Length(
             u16::try_from(cell_height).map_err(Error::ConvertUsizeToU16)?,
         ))
-        .take(rows.into())
+        .take(rows)
         .collect::<Vec<_>>();
 
         let col_constraints = std::iter::repeat(Constraint::Length(
             u16::try_from(cell_width).map_err(Error::ConvertUsizeToU16)?,
         ))
-        .take(columns.into())
+        .take(columns)
         .collect::<Vec<_>>();
 
         let mut app = App::new(Board::new(rows, columns, mines)?);
@@ -439,16 +439,13 @@ impl Ui {
 
                         for (c, cell_rect) in col_rects.into_iter().enumerate() {
                             let cell = app.cell((r, c));
-                            let single_row_text = format!(
-                                "{:^length$}",
-                                cell.to_string(),
-                                length = usize::from(cell_width - 2)
-                            );
-                            let pad_line = " ".repeat(usize::from(cell_width));
+                            let single_row_text =
+                                format!("{:^length$}", cell.to_string(), length = cell_width - 2);
+                            let pad_line = " ".repeat(cell_width);
 
                             // 1 line for the text, 1 line each for the top and bottom of the cell == 3 lines
                             // that are not eligible for padding
-                            let num_pad_lines = usize::from(cell_height - 3);
+                            let num_pad_lines = cell_height - 3;
 
                             // text is:
                             //   pad with half the pad lines budget
