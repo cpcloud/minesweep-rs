@@ -161,6 +161,7 @@
         inputsFrom = [ self.defaultPackage.${localSystem} ];
         nativeBuildInputs = with pkgs.pkgsBuildBuild; [
           cacert
+          cargo-audit
           cargo-bloat
           cargo-edit
           cargo-udeps
