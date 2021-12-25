@@ -108,7 +108,6 @@ jobs:
           version: 1.0.0-alpha.8
 
       - uses: cycjimmy/semantic-release-action@v2
-        if: ${{ github.event_name == 'push' }}
         with:
           semantic_version: 17.1.1
           extra_plugins: |
