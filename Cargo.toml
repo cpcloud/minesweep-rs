@@ -24,3 +24,5 @@ typed-builder = "^0.9"
 
 [profile.release]
 lto = true
+codegen-units = 1
+opt-level = 's'
