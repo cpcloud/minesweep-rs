@@ -3,6 +3,10 @@ on:
     paths:
       - "**/Cargo.toml"
       - "**/Cargo.lock"
+  pull_request:
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
   workflow_dispatch:
 
 name: Cargo Audit
@@ -23,6 +27,11 @@ jobs:
           - windows-latest
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions-rs/audit-check@v1
+        if: ${{ github.event_name != 'pull_request' }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions-rs/audit-check@v1
+        if: ${{ github.event_name == 'pull_request' }}
