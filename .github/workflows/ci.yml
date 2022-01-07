@@ -56,6 +56,7 @@ jobs:
           set -euo pipefail
 
           docker load -i "$(nix path-info --print-build-logs '.#minesweep-image')"
+
       - name: show help
         run: |
           set -euo pipefail

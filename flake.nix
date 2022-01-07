@@ -165,7 +165,7 @@
           cargo-bloat
           cargo-edit
           cargo-udeps
-          commitizen
+          cz-cli
           file
           git
           nix-linter
