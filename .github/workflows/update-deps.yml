@@ -21,7 +21,7 @@ jobs:
 
           flakes="$(nix flake metadata --json | jq -rcM '.locks.nodes.root.inputs | {flake: keys}')"
           echo "::set-output name=matrix::$flakes"
-  niv-update:
+  flake-update:
     runs-on: ubuntu-latest
     needs:
       - get-flakes
@@ -36,11 +36,6 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable-small
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-
-      - uses: cachix/cachix-action@v10
-        with:
-          name: minesweep
-          extraPullNames: nix-community,naersk
 
       - uses: tibdex/github-app-token@v1
         id: generate-token
