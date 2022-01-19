@@ -1,4 +1,5 @@
-# Release Notes
+Release Notes
+---
 
 ## [6.0.4](https://github.com/cpcloud/minesweep-rs/compare/v6.0.3...v6.0.4) (2022-01-14)
 

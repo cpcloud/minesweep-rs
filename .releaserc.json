@@ -3,7 +3,7 @@
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
-    ["@semantic-release/changelog", { "changelogTitle": "# Release Notes" }],
+    ["@semantic-release/changelog", { "changelogTitle": "Release Notes\n---" }],
     [
       "@semantic-release/exec",
       {
