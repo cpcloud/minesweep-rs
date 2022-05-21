@@ -97,7 +97,7 @@
       apps.minesweep = flake-utils.lib.mkApp {
         drv = packages.minesweep;
       };
-      defaultApp = apps.minesweep;
+      defaultApp = packages.minesweep;
 
       packages.minesweep-image = pkgs.pkgsBuildBuild.dockerTools.buildLayeredImage {
         name = "minesweep";
