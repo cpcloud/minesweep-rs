@@ -6,6 +6,11 @@
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
 
+    flake-compat = {
+      url = "github:edolstra/flake-compat";
+      flake = false;
+    };
+
     pre-commit-hooks = {
       url = "github:cachix/pre-commit-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -38,6 +43,7 @@
     , naersk
     , nixpkgs
     , pre-commit-hooks
+    , ...
     }:
     flake-utils.lib.eachDefaultSystem (localSystem:
     let
@@ -129,7 +135,7 @@
 
             shfmt = {
               enable = true;
-              entry = "${pkgs.pkgsBuildBuild.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
+              entry = mkForce "${pkgs.pkgsBuildBuild.shfmt}/bin/shfmt -i 2 -sr -d -s -l";
               files = "\\.sh$";
             };
 
