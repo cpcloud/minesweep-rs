@@ -19,10 +19,13 @@
 
     naersk = {
       url = "github:nmattia/naersk";
-      inputs.flake-utils.follows = "flake-utils";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    fenix.url = "github:nix-community/fenix";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
@@ -42,7 +45,7 @@
     }:
     flake-utils.lib.eachDefaultSystem (localSystem:
     let
-      crossSystem = nixpkgs.lib.systems.examples.musl64 // { useLLVM = true; };
+      crossSystem = nixpkgs.lib.systems.examples.musl64 // { useLLVM = false; };
       pkgs = import nixpkgs {
         inherit localSystem crossSystem;
         overlays = [
