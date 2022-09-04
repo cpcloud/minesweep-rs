@@ -19,15 +19,10 @@
 
     naersk = {
       url = "github:nmattia/naersk";
-      inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "flake-utils";
     };
 
-    fenix = {
-      url = "github:nix-community/fenix";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
+    fenix.url = "github:nix-community/fenix";
 
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
