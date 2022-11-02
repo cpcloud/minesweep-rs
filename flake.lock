@@ -118,11 +118,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1666604592,
-        "narHash": "sha256-Bxy7xeVAwC0yxFaeYZM7N9Us/ebxpMC9TCceKEFeay4=",
+        "lastModified": 1667392064,
+        "narHash": "sha256-dD1uFtvjrYKkzdVjzu/x6S5GUKrCq33/AxY/DNs4ER8=",
         "owner": "cachix",
         "repo": "pre-commit-hooks.nix",
-        "rev": "1b436f36e2812c589e6d830e3223059ea9661100",
+        "rev": "a7cbf54c1ffe46e1a1112a1f55047263c9af06b5",
         "type": "github"
       },
       "original": {
