@@ -62,15 +62,7 @@ fn align_strings_to_char(strings: &[&str], c: char) -> Vec<String> {
     firsts
         .into_iter()
         .zip(rests.into_iter())
-        .map(|(first, rest)| {
-            format!(
-                "{:>left_length$}{:<right_length$}",
-                first,
-                rest,
-                left_length = max_firsts,
-                right_length = max_rests
-            )
-        })
+        .map(|(first, rest)| format!("{first:>max_firsts$}{rest:<max_rests$}"))
         .collect()
 }
 
@@ -179,7 +171,7 @@ impl fmt::Display for Cell<'_> {
                 if num_adjacent_mines == 0 {
                     " ".to_owned()
                 } else {
-                    format!("{}", num_adjacent_mines)
+                    format!("{num_adjacent_mines}")
                 }
             } else {
                 " ".to_owned()

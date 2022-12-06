@@ -42,7 +42,7 @@ impl Events {
                     let stdin = io::stdin();
                     for key in stdin.keys().flatten() {
                         if let Err(err) = tx.send(Event::Input(key)) {
-                            eprintln!("{}", err);
+                            eprintln!("{err}");
                             return;
                         }
                     }
