@@ -49,7 +49,7 @@
       pkgs = import nixpkgs {
         inherit localSystem crossSystem;
         overlays = [
-          fenix.overlay
+          fenix.overlays.default
           gitignore.overlay
           naersk.overlay
           (final: prev: {
