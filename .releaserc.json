@@ -11,7 +11,7 @@
         "publishCmd": "nix-shell --run 'cargo publish'"
       }
     ],
-    "@semantic-release/github",
+    ["@semantic-release/github", { "successComment": false }],
     [
       "@semantic-release/git",
       { "assets": ["Cargo.toml", "Cargo.lock", "CHANGELOG.md"] }
