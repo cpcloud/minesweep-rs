@@ -96,12 +96,7 @@
         RUSTFLAGS = "-C linker-flavor=ld.lld -C target-feature=+crt-static";
       };
 
-      defaultPackage = packages.minesweep;
-
-      apps.minesweep = flake-utils.lib.mkApp {
-        drv = packages.minesweep;
-      };
-      defaultApp = packages.minesweep;
+      packages.default = packages.minesweep;
 
       packages.minesweep-image = pkgs.pkgsBuildBuild.dockerTools.buildLayeredImage {
         name = "minesweep";
@@ -111,25 +106,16 @@
         };
       };
 
+      apps.minesweep = flake-utils.lib.mkApp { drv = packages.minesweep; };
+      apps.default = apps.minesweep;
+
       checks = {
         pre-commit-check = pre-commit-hooks.lib.${localSystem}.run {
           src = ./.;
           hooks = {
-            nix-linter = {
-              enable = true;
-              entry = mkForce "${pkgs.pkgsBuildBuild.nix-linter}/bin/nix-linter";
-            };
-
-            nixpkgs-fmt = {
-              enable = true;
-              entry = mkForce "${pkgs.pkgsBuildBuild.nixpkgs-fmt}/bin/nixpkgs-fmt --check";
-            };
-
-            shellcheck = {
-              enable = true;
-              entry = "${pkgs.pkgsBuildBuild.shellcheck}/bin/shellcheck";
-              files = "\\.sh$";
-            };
+            nix-linter.enable = true;
+            nixpkgs-fmt.enable = true;
+            shellcheck.enable = true;
 
             shfmt = {
               enable = true;
@@ -161,8 +147,8 @@
         };
       };
 
-      devShell = pkgs.mkShell {
-        inputsFrom = [ self.defaultPackage.${localSystem} ];
+      devShells.default = pkgs.mkShell {
+        inputsFrom = [ packages.minesweep ];
         nativeBuildInputs = with pkgs.pkgsBuildBuild; [
           cacert
           cargo-audit
