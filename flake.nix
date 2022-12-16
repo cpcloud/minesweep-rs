@@ -53,20 +53,24 @@
           gitignore.overlay
           naersk.overlay
           (final: prev: {
-            rustToolchain = final.fenix.combine [
-              fenix.packages.${localSystem}.latest.clippy-preview
-              fenix.packages.${localSystem}.latest.rust-analysis
-              fenix.packages.${localSystem}.latest.rust-analyzer-preview
-              fenix.packages.${localSystem}.latest.rust-src
-              fenix.packages.${localSystem}.latest.rust-std
-              fenix.packages.${localSystem}.latest.rustfmt-preview
-              fenix.packages.${localSystem}.minimal.cargo
-              fenix.packages.${localSystem}.minimal.rustc
-              final.fenix.targets.${crossSystem.config}.latest.rust-std
-            ];
+            rustToolchain =
+              let
+                fenixPackages = fenix.packages.${localSystem};
+              in
+              final.fenix.combine [
+                fenixPackages.latest.clippy-preview
+                fenixPackages.latest.rust-analysis
+                fenixPackages.latest.rust-analyzer-preview
+                fenixPackages.latest.rust-src
+                fenixPackages.latest.rust-std
+                fenixPackages.latest.rustfmt-preview
+                fenixPackages.minimal.cargo
+                fenixPackages.minimal.rustc
+                final.fenix.targets.${crossSystem.config}.latest.rust-std
+              ];
 
-            rustStdenv = final.pkgsBuildHost.llvmPackages_13.stdenv;
-            rustLinker = final.pkgsBuildHost.llvmPackages_13.lld;
+            rustStdenv = final.pkgsBuildHost.llvmPackages_14.stdenv;
+            rustLinker = final.pkgsBuildHost.llvmPackages_14.lld;
 
             naerskBuild = (prev.pkgsBuildHost.naersk.override {
               cargo = final.rustToolchain;
