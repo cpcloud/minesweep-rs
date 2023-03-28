@@ -117,7 +117,8 @@
         pre-commit-check = pre-commit-hooks.lib.${localSystem}.run {
           src = ./.;
           hooks = {
-            nix-linter.enable = true;
+            statix.enable = true;
+            deadnix.enable = true;
             nixpkgs-fmt.enable = true;
             shellcheck.enable = true;
 
@@ -159,14 +160,15 @@
           cargo-bloat
           cargo-edit
           cargo-udeps
+          deadnix
           file
           git
-          nix-linter
           nixpkgs-fmt
           prettierTOML
+          statix
         ];
 
-        shellHook = self.checks.${localSystem}.pre-commit-check.shellHook;
+        inherit (self.checks.${localSystem}.pre-commit-check) shellHook;
       };
     });
 }
