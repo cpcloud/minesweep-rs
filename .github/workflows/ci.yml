@@ -74,7 +74,7 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,naersk
 
-      - uses: cycjimmy/semantic-release-action@v2.7.0
+      - uses: cycjimmy/semantic-release-action@v3.4.2
         with:
           extra_plugins: |
             @semantic-release/commit-analyzer
