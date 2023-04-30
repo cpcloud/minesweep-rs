@@ -13,7 +13,7 @@ readme = "./README.md"
 [dependencies]
 anyhow = "^1.0.57"
 bit-set = "^0.5.2"
-ctrlc = "^3.2.2"
+ctrlc = "^3.2.5"
 num-traits = "^0.2.14"
 rand = "^0.8.5"
 structopt = "^0.3.26"
