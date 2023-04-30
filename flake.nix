@@ -77,12 +77,6 @@
               rustc = final.rustToolchain;
               stdenv = final.rustStdenv;
             }).buildPackage;
-
-            prettierTOML = final.pkgsBuildHost.writeShellScriptBin "prettier" ''
-              ${final.pkgsBuildHost.nodePackages.prettier}/bin/prettier \
-              --plugin-search-dir "${final.pkgsBuildHost.nodePackages.prettier-plugin-toml}/lib" \
-              "$@"
-            '';
           })
         ];
       };
@@ -145,8 +139,14 @@
 
             prettier = {
               enable = true;
-              entry = mkForce "${pkgs.pkgsBuildBuild.prettierTOML}/bin/prettier --check";
-              types_or = [ "json" "toml" "yaml" "markdown" ];
+              entry = mkForce "${pkgs.pkgsBuildBuild.nodePackages.prettier}/bin/prettier --check";
+              types_or = [ "json" "yaml" "markdown" ];
+            };
+
+            taplo = {
+              enable = true;
+              entry = mkForce "${pkgs.pkgsBuildBuild.taplo-cli}/bin/taplo fmt";
+              types = [ "toml" ];
             };
           };
         };
@@ -164,8 +164,8 @@
           file
           git
           nixpkgs-fmt
-          prettierTOML
           statix
+          taplo-cli
         ];
 
         inherit (self.checks.${localSystem}.pre-commit-check) shellHook;

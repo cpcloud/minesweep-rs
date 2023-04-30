@@ -4,15 +4,7 @@ use crate::{
     sweep::{Board, Coordinate},
 };
 use num_traits::ToPrimitive;
-use std::{
-    fmt, io,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-};
-use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen};
-use tui::{
+use ratatui::{
     backend::TermionBackend,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -20,6 +12,14 @@ use tui::{
     widgets::{Block, BorderType, Borders, Clear, Gauge, List, ListItem, Paragraph},
     Terminal,
 };
+use std::{
+    fmt, io,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
+use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::IntoAlternateScreen};
 
 fn centered_rect(width: u16, height: u16, r: Rect) -> Rect {
     let Rect {
@@ -282,10 +282,11 @@ impl Ui {
 
         let stdout = io::stdout()
             .into_raw_mode()
-            .map_err(Error::GetStdoutInRawMode)?;
+            .map_err(Error::GetStdoutInRawMode)?
+            .into_alternate_screen()
+            .map_err(Error::GetAlternateScreenForMouseTerminal)?;
         let mouse_terminal = MouseTerminal::from(stdout);
-        let alt_screen = AlternateScreen::from(mouse_terminal);
-        let backend = TermionBackend::new(alt_screen);
+        let backend = TermionBackend::new(mouse_terminal);
         let mut terminal = Terminal::new(backend).map_err(Error::CreateTerminal)?;
 
         while running.load(Ordering::SeqCst) {
@@ -421,15 +422,15 @@ impl Ui {
                         .constraints(row_constraints.clone())
                         .split(final_mines_rect);
 
-                    for (r, row_rect) in row_rects.into_iter().enumerate() {
+                    for (r, row_rect) in row_rects.iter().enumerate() {
                         let col_rects = Layout::default()
                             .direction(Direction::Horizontal)
                             .vertical_margin(0)
                             .horizontal_margin(1)
                             .constraints(col_constraints.clone())
-                            .split(row_rect);
+                            .split(*row_rect);
 
-                        for (c, cell_rect) in col_rects.into_iter().enumerate() {
+                        for (c, cell_rect) in col_rects.iter().enumerate() {
                             let cell = app.cell((r, c));
                             let single_row_text =
                                 format!("{:^length$}", cell.to_string(), length = cell_width - 2);
@@ -454,7 +455,7 @@ impl Ui {
                             let cell_text = Paragraph::new(text)
                                 .block(cell.block(lost))
                                 .style(cell.text_style());
-                            frame.render_widget(cell_text, cell_rect);
+                            frame.render_widget(cell_text, *cell_rect);
                         }
                     }
 
