@@ -3,5 +3,6 @@
   "lockFileMaintenance": { "enabled": true },
   "automerge": true,
   "labels": ["dependencies"],
-  "enabledManagers": ["github-actions", "cargo"]
+  "enabledManagers": ["github-actions", "cargo"],
+  "dependencyDashboard": true
 }
