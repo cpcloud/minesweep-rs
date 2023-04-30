@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.6](https://github.com/cpcloud/minesweep-rs/compare/v6.0.5...v6.0.6) (2023-04-30)
+
+
+### Bug Fixes
+
+* **padding:** work around right side padding issue ([e793b92](https://github.com/cpcloud/minesweep-rs/commit/e793b92b73dada11421e3e46013efaf06ebd52c2))
+
 ## [6.0.5](https://github.com/cpcloud/minesweep-rs/compare/v6.0.4...v6.0.5) (2023-04-30)
 
 
