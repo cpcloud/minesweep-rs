@@ -350,7 +350,12 @@ impl Ui {
                         .constraints(vec![
                             Constraint::Min(horizontal_pad_block_width),
                             Constraint::Length(grid_width),
-                            Constraint::Min(horizontal_pad_block_width),
+                            // unclear why the right side padding is much smaller than the rest
+                            //
+                            // I suspect it's a consequence of the layout algorithm
+                            //
+                            // I subtract one to give the right side a tad more space
+                            Constraint::Min(horizontal_pad_block_width - 1),
                         ])
                         .split(mines_rect);
 
