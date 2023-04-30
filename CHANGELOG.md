@@ -1,6 +1,15 @@
 Release Notes
 ---
 
+## [6.0.5](https://github.com/cpcloud/minesweep-rs/compare/v6.0.4...v6.0.5) (2023-04-30)
+
+
+### Bug Fixes
+
+* **deps:** bump em all ([af4496b](https://github.com/cpcloud/minesweep-rs/commit/af4496b82efa38e186e75504ad985a49026f137c))
+* **deps:** update rust crate termion to v2 ([c002260](https://github.com/cpcloud/minesweep-rs/commit/c0022608668731bc97b700dee286fa34162eb5c3))
+* **flags:** handle the case where all flags have been used ([be7ce04](https://github.com/cpcloud/minesweep-rs/commit/be7ce042dd7abf3cc8be339158d5b89789415528))
+
 ## [6.0.4](https://github.com/cpcloud/minesweep-rs/compare/v6.0.3...v6.0.4) (2022-01-14)
 
 
