@@ -338,7 +338,7 @@ impl Ui {
                                 .log10()
                                 .ceil()
                                 .to_usize()
-                                .unwrap()
+                                .unwrap_or(0)
                                 + 1
                         ))
                         .ratio(available_flags.to_f64().unwrap() / mines.to_f64().unwrap());
