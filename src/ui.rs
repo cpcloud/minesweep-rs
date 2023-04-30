@@ -460,7 +460,7 @@ impl Ui {
                             //   join with newlines
                             let text = std::iter::repeat(pad_line.clone())
                                 .take(num_pad_lines / 2)
-                                .chain(std::iter::once(single_row_text.clone()))
+                                .chain(std::iter::once(single_row_text))
                                 .chain(std::iter::repeat(pad_line).take(num_pad_lines / 2))
                                 .collect::<Vec<_>>()
                                 .join("\n");
@@ -475,7 +475,7 @@ impl Ui {
                     // if the user has lost or won, display a banner indicating so
                     if lost || app.won() {
                         let area = centered_rect(20, 3, final_mines_rect);
-                        frame.render_widget(Clear, area); //this clears out the background
+                        frame.render_widget(Clear, area); // this clears out the background
                         frame.render_widget(
                             Paragraph::new(format!("You {}!", if lost { "lose" } else { "won" }))
                                 .block(
