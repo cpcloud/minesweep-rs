@@ -11,18 +11,18 @@ keywords = ["terminal", "minesweeper", "game"]
 readme = "./README.md"
 
 [dependencies]
-anyhow = "^1.0.57"
-bit-set = "^0.5.2"
-ctrlc = "^3.2.2"
-num-traits = "^0.2.14"
+anyhow = "^1.0.71"
+bit-set = "^0.5.3"
+ctrlc = "^3.2.5"
+num-traits = "^0.2.15"
 rand = "^0.8.5"
 structopt = "^0.3.26"
 termion = "^2.0.1"
-thiserror = "^1.0.30"
+thiserror = "^1.0.40"
 ratatui = { version = "^0.20.1", features = [
   "termion",
 ], default-features = false }
-typed-builder = "^0.10.0"
+typed-builder = "^0.14.0"
 
 [profile.release]
 panic = "abort"
