@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.7](https://github.com/cpcloud/minesweep-rs/compare/v6.0.6...v6.0.7) (2023-04-30)
+
+
+### Bug Fixes
+
+* **ui:** ensure overflow on grid setup does not happen ([7468748](https://github.com/cpcloud/minesweep-rs/commit/74687482e66ddf79987422c723f381319ba70536))
+
 ## [6.0.6](https://github.com/cpcloud/minesweep-rs/compare/v6.0.5...v6.0.6) (2023-04-30)
 
 
