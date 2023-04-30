@@ -17,7 +17,7 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable-small
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v10
+      - uses: cachix/cachix-action@v12
         with:
           name: minesweep
           extraPullNames: nix-community,naersk
