@@ -19,7 +19,9 @@ rand = "^0.8.5"
 structopt = "^0.3.26"
 termion = "^2.0.1"
 thiserror = "^1.0.30"
-tui = { version = "^0.18.0", features = ["termion"], default-features = false }
+ratatui = { version = "^0.20.1", features = [
+  "termion",
+], default-features = false }
 typed-builder = "^0.10.0"
 
 [profile.release]
