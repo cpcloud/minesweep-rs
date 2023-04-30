@@ -344,7 +344,11 @@ impl Ui {
                         ))
                         .ratio(available_flags.to_f64().unwrap() / mines.to_f64().unwrap());
 
-                    let horizontal_pad_block_width = (terminal_rect.width - grid_width) / 2;
+                    let horizontal_pad_block_width = terminal_rect
+                        .width
+                        .checked_sub(grid_width)
+                        .unwrap_or(terminal_rect.width)
+                        / 2;
                     let mines_rects = Layout::default()
                         .direction(Direction::Horizontal)
                         .constraints(vec![
@@ -355,11 +359,15 @@ impl Ui {
                             // I suspect it's a consequence of the layout algorithm
                             //
                             // I subtract one to give the right side a tad more space
-                            Constraint::Min(horizontal_pad_block_width - 1),
+                            Constraint::Min(horizontal_pad_block_width.saturating_sub(1)),
                         ])
                         .split(mines_rect);
 
-                    let vertical_pad_block_height = (mines_rect.height - grid_height) / 2;
+                    let vertical_pad_block_height = mines_rect
+                        .height
+                        .checked_sub(grid_height)
+                        .unwrap_or(mines_rect.height)
+                        / 2;
                     let middle_mines_rects = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints(vec![
