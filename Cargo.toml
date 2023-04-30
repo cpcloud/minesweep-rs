@@ -20,7 +20,7 @@ structopt = "^0.3.26"
 termion = "^1.5.6"
 thiserror = "^1.0.30"
 tui = { version = "^0.18.0", features = ["termion"], default-features = false }
-typed-builder = "^0.10.0"
+typed-builder = "^0.14.0"
 
 [profile.release]
 panic = "abort"
