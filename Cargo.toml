@@ -19,7 +19,7 @@ rand = "^0.8.5"
 structopt = "^0.3.26"
 termion = "^2.0.1"
 thiserror = "^1.0.40"
-ratatui = { version = "^0.20.1", features = [
+ratatui = { version = "^0.21.0", features = [
   "termion",
 ], default-features = false }
 typed-builder = "^0.14.0"
