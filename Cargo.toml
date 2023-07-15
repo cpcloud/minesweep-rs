@@ -22,7 +22,7 @@ thiserror = "^1.0.43"
 ratatui = { version = "^0.21.0", features = [
   "termion",
 ], default-features = false }
-typed-builder = "^0.15.0"
+typed-builder = "^0.15.1"
 
 [profile.release]
 panic = "abort"
