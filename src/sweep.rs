@@ -121,10 +121,13 @@ impl Board {
     }
 
     pub(crate) fn won(&self) -> bool {
-        let exposed_or_correctly_flagged = self.seen.len() + self.correctly_flagged_mines;
+        let nseen = self.seen.len();
+        let exposed_or_correctly_flagged = nseen + self.correctly_flagged_mines;
         let ntiles = self.rows * self.columns;
+
         assert!(exposed_or_correctly_flagged <= ntiles);
-        ntiles == exposed_or_correctly_flagged
+
+        ntiles == exposed_or_correctly_flagged || (self.tiles.len() - nseen) == self.mines
     }
 
     fn index_from_coord(&self, (r, c): Coordinate) -> usize {
@@ -179,6 +182,12 @@ impl Board {
     pub(crate) fn tile_mut(&mut self, i: usize, j: usize) -> Result<&mut Tile, Error> {
         let index = self.index_from_coord((i, j));
         self.tiles.get_mut(index).ok_or(Error::GetTile((i, j)))
+    }
+
+    pub(crate) fn flag_all(&mut self) {
+        for tile in self.tiles.iter_mut() {
+            tile.flagged = !tile.exposed && tile.mine;
+        }
     }
 
     pub(crate) fn flag(&mut self, i: usize, j: usize) -> Result<bool, Error> {
