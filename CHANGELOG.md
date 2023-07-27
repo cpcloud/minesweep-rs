@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.20](https://github.com/cpcloud/minesweep-rs/compare/v6.0.19...v6.0.20) (2023-07-27)
+
+
+### Bug Fixes
+
+* **win-state:** ensure that if remaining unexposed tiles are all bombs the user wins ([47ec337](https://github.com/cpcloud/minesweep-rs/commit/47ec337c8d762ea64c1c1199e2f23aafcc93aece))
+
 ## [6.0.19](https://github.com/cpcloud/minesweep-rs/compare/v6.0.18...v6.0.19) (2023-07-23)
 
 
