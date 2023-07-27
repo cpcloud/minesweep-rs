@@ -69,8 +69,8 @@
                 final.fenix.targets.${crossSystem.config}.latest.rust-std
               ];
 
-            rustStdenv = final.pkgsBuildHost.llvmPackages_14.stdenv;
-            rustLinker = final.pkgsBuildHost.llvmPackages_14.lld;
+            rustStdenv = final.pkgsBuildHost.llvmPackages_16.stdenv;
+            rustLinker = final.pkgsBuildHost.llvmPackages_16.lld;
 
             naerskBuild = (prev.pkgsBuildHost.naersk.override {
               cargo = final.rustToolchain;
