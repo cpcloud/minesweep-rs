@@ -61,7 +61,7 @@ fn align_strings_to_char(strings: &[&str], c: char) -> Vec<String> {
     let max_rests = rests.iter().map(|&r| r.len()).max().unwrap();
     firsts
         .into_iter()
-        .zip(rests.into_iter())
+        .zip(rests)
         .map(|(first, rest)| format!("{first:>max_firsts$}{rest:<max_rests$}"))
         .collect()
 }
@@ -237,6 +237,10 @@ impl App {
         let (r, c) = self.active();
         self.board.flag(r, c)?;
         Ok(())
+    }
+
+    pub(crate) fn flag_all(&mut self) {
+        self.board.flag_all()
     }
 }
 
@@ -474,6 +478,7 @@ impl Ui {
 
                     // if the user has lost or won, display a banner indicating so
                     if lost || app.won() {
+                        app.flag_all();
                         let area = centered_rect(20, 3, final_mines_rect);
                         frame.render_widget(Clear, area); // this clears out the background
                         frame.render_widget(
