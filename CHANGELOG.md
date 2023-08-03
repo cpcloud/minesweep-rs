@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.21](https://github.com/cpcloud/minesweep-rs/compare/v6.0.20...v6.0.21) (2023-08-03)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate typed-builder to ^0.15.2 ([77a1446](https://github.com/cpcloud/minesweep-rs/commit/77a144670c0cfeddbfd469d807a8dbf1d9e153a5))
+
 ## [6.0.20](https://github.com/cpcloud/minesweep-rs/compare/v6.0.19...v6.0.20) (2023-07-27)
 
 
