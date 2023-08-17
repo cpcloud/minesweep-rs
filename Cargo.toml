@@ -11,7 +11,7 @@ keywords = ["terminal", "minesweeper", "game"]
 readme = "./README.md"
 
 [dependencies]
-anyhow = "^1.0.74"
+anyhow = "^1.0.75"
 bit-set = "^0.5.3"
 ctrlc = "^3.4.0"
 num-traits = "^0.2.16"
