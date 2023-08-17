@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.27](https://github.com/cpcloud/minesweep-rs/compare/v6.0.26...v6.0.27) (2023-08-17)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate thiserror to ^1.0.47 ([dad942a](https://github.com/cpcloud/minesweep-rs/commit/dad942a1d5b9748c72ea94199fc7e27430bc0d43))
+
 ## [6.0.26](https://github.com/cpcloud/minesweep-rs/compare/v6.0.25...v6.0.26) (2023-08-17)
 
 
