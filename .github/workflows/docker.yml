@@ -32,7 +32,7 @@ jobs:
           set -euo pipefail
 
           echo "FROM minesweep:$(nix eval --raw '.#minesweep-image.imageTag')" > Dockerfile
-      - uses: docker/metadata-action@v4
+      - uses: docker/metadata-action@v5
         id: meta
         with:
           images: |
