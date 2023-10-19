@@ -18,7 +18,7 @@ num-traits = "^0.2.17"
 rand = "^0.8.5"
 structopt = "^0.3.26"
 termion = "^2.0.1"
-thiserror = "^1.0.49"
+thiserror = "^1.0.50"
 ratatui = { version = "^0.23.0", features = [
   "termion",
 ], default-features = false }
