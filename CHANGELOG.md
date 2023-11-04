@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.40](https://github.com/cpcloud/minesweep-rs/compare/v6.0.39...v6.0.40) (2023-11-04)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate termion to ^2.0.3 ([fe16a8a](https://github.com/cpcloud/minesweep-rs/commit/fe16a8ae0ca08fb6a94e698b2178a870e1003a5f))
+
 ## [6.0.39](https://github.com/cpcloud/minesweep-rs/compare/v6.0.38...v6.0.39) (2023-10-23)
 
 
