@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.44](https://github.com/cpcloud/minesweep-rs/compare/v6.0.43...v6.0.44) (2023-12-22)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate ctrlc to ^3.4.2 ([194a789](https://github.com/cpcloud/minesweep-rs/commit/194a789a9d76ca17072ff1093b3196ae4171a386))
+
 ## [6.0.43](https://github.com/cpcloud/minesweep-rs/compare/v6.0.42...v6.0.43) (2023-12-21)
 
 
