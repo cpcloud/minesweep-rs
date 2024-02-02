@@ -253,7 +253,7 @@ dependencies = [
  "rand",
  "ratatui",
  "structopt",
- "termion 2.0.3",
+ "termion",
  "thiserror",
  "typed-builder",
 ]
@@ -389,7 +389,7 @@ dependencies = [
  "paste",
  "stability",
  "strum",
- "termion 3.0.0",
+ "termion",
  "unicode-segmentation",
  "unicode-width",
 ]
@@ -509,18 +509,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "termion"
-version = "2.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4648c7def6f2043b2568617b9f9b75eae88ca185dbc1f1fda30e95a85d49d7d"
-dependencies = [
- "libc",
- "libredox",
- "numtoa",
- "redox_termios",
 ]
 
 [[package]]
