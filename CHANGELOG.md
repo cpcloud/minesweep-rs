@@ -1,6 +1,13 @@
 Release Notes
 ---
 
+## [6.0.51](https://github.com/cpcloud/minesweep-rs/compare/v6.0.50...v6.0.51) (2024-02-02)
+
+
+### Bug Fixes
+
+* **deps:** update rust crate ratatui to ^0.26.0 ([2ef2956](https://github.com/cpcloud/minesweep-rs/commit/2ef2956dcd700c6ae46f2ae114547e5b0b366423))
+
 ## [6.0.50](https://github.com/cpcloud/minesweep-rs/compare/v6.0.49...v6.0.50) (2024-01-16)
 
 
