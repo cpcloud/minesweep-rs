@@ -4,5 +4,8 @@
   "automerge": true,
   "labels": ["dependencies"],
   "enabledManagers": ["github-actions", "cargo"],
-  "dependencyDashboard": true
+  "dependencyDashboard": true,
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps"
 }
