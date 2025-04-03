@@ -387,14 +387,15 @@ impl Ui {
                                 "movement: hjkl / ← ↓ ↑ →",
                                 "expose tile: spacebar",
                                 "flag tile: f",
+                                "restart: r",
                                 "quit: q",
                             ],
                             ':',
                         )
-                        .into_iter()
-                        .map(|line| format!("{:^width$}", line, width = usize::from(grid_width)))
-                        .map(ListItem::new)
-                        .collect::<Vec<_>>(),
+                            .into_iter()
+                            .map(|line| format!("{:^width$}", line, width = usize::from(grid_width)))
+                            .map(ListItem::new)
+                            .collect::<Vec<_>>(),
                     )
                     .block(Block::default().borders(Borders::NONE));
                     frame.render_widget(help_text_block, middle_mines_rects[2]);
@@ -402,7 +403,7 @@ impl Ui {
                     let info_text_split_rects = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints(vec![
-                            Constraint::Min(vertical_pad_block_height - 3),
+                            Constraint::Min(vertical_pad_block_height.saturating_sub(3)),
                             Constraint::Length(3),
                         ])
                         .split(middle_mines_rects[0]);
@@ -519,6 +520,10 @@ impl Ui {
                         if lost {
                             app.expose_all()?;
                         }
+                    }
+                    Key::Char('r') => {
+                        app = App::new(Board::new(rows, columns, mines)?);
+                        lost = false;
                     }
                     Key::Char('q') => break,
                     _ => {}
