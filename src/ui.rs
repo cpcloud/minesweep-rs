@@ -392,10 +392,10 @@ impl Ui {
                             ],
                             ':',
                         )
-                            .into_iter()
-                            .map(|line| format!("{:^width$}", line, width = usize::from(grid_width)))
-                            .map(ListItem::new)
-                            .collect::<Vec<_>>(),
+                        .into_iter()
+                        .map(|line| format!("{:^width$}", line, width = usize::from(grid_width)))
+                        .map(ListItem::new)
+                        .collect::<Vec<_>>(),
                     )
                     .block(Block::default().borders(Borders::NONE));
                     frame.render_widget(help_text_block, middle_mines_rects[2]);
