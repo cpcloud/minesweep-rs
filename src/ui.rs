@@ -387,6 +387,7 @@ impl Ui {
                                 "movement: hjkl / ← ↓ ↑ →",
                                 "expose tile: spacebar",
                                 "flag tile: f",
+                                "restart: r",
                                 "quit: q",
                             ],
                             ':',
@@ -402,7 +403,7 @@ impl Ui {
                     let info_text_split_rects = Layout::default()
                         .direction(Direction::Vertical)
                         .constraints(vec![
-                            Constraint::Min(vertical_pad_block_height - 3),
+                            Constraint::Min(vertical_pad_block_height.saturating_sub(3)),
                             Constraint::Length(3),
                         ])
                         .split(middle_mines_rects[0]);
@@ -519,6 +520,10 @@ impl Ui {
                         if lost {
                             app.expose_all()?;
                         }
+                    }
+                    Key::Char('r') => {
+                        app = App::new(Board::new(rows, columns, mines)?);
+                        lost = false;
                     }
                     Key::Char('q') => break,
                     _ => {}
